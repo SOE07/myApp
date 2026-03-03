@@ -1,3 +1,6 @@
+import { useRef } from 'react'
+import * as XLSX from 'xlsx'
+
 const MAX = {
   tag: 30,
   title: 60,
@@ -27,11 +30,58 @@ function Field({ label, children }) {
   )
 }
 
+function Slider({ label, value, min, max, onChange }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xs text-slate-400 w-28 shrink-0">{label}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="flex-1 accent-purple-500 h-1.5"
+      />
+      <span className="text-xs text-slate-400 w-10 text-right">{value}px</span>
+    </div>
+  )
+}
+
+function ColorPicker({ label, value, onChange }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xs text-slate-400 w-28 shrink-0">{label}</span>
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-8 h-8 rounded border border-slate-600 cursor-pointer bg-transparent"
+      />
+      <span className="text-xs text-slate-500">{value}</span>
+    </div>
+  )
+}
+
 const INPUT_CLS =
   'w-full bg-slate-900 text-white text-sm rounded-lg border border-slate-600 px-3 py-2.5 outline-none placeholder:text-slate-500 focus:border-purple-500 transition-colors'
 
-export default function StoryForm({ formData, onChange, onExport, onReset }) {
+export default function StoryForm({
+  formData,
+  onChange,
+  settings,
+  onSettingsChange,
+  bgImage,
+  onBgUpload,
+  onBgRemove,
+  onExcelImport,
+  onExport,
+  onReset,
+}) {
+  const fileInputRef = useRef(null)
+  const excelInputRef = useRef(null)
+
   const set = (key, value) => onChange({ ...formData, [key]: value })
+  const setSetting = (key, value) => onSettingsChange({ ...settings, [key]: value })
 
   const setBullet = (idx, value) => {
     const next = [...formData.bullets]
@@ -48,9 +98,87 @@ export default function StoryForm({ formData, onChange, onExport, onReset }) {
     onChange({ ...formData, bullets: formData.bullets.filter((_, i) => i !== idx) })
   }
 
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (file) onBgUpload(file)
+    e.target.value = ''
+  }
+
+  const handleExcelChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (evt) => {
+      const data = new Uint8Array(evt.target.result)
+      const workbook = XLSX.read(data, { type: 'array' })
+      const sheet = workbook.Sheets[workbook.SheetNames[0]]
+      const rows = XLSX.utils.sheet_to_json(sheet)
+      onExcelImport(rows)
+    }
+    reader.readAsArrayBuffer(file)
+    e.target.value = ''
+  }
+
   return (
-    <div className="bg-slate-800 rounded-xl p-6">
-      {/* Thema */}
+    <div className="bg-slate-800 rounded-xl p-6 space-y-0">
+      {/* ── Excel Import ── */}
+      <div className="mb-6 p-4 rounded-lg border border-dashed border-slate-600">
+        <p className="text-sm font-medium text-slate-300 mb-2">Excel Import</p>
+        <p className="text-xs text-slate-500 mb-3">
+          Spalten: Thema, Titel, Subheadline, Bullet1–Bullet5, CTA
+        </p>
+        <input
+          ref={excelInputRef}
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          className="hidden"
+          onChange={handleExcelChange}
+        />
+        <button
+          type="button"
+          className="text-sm bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors"
+          onClick={() => excelInputRef.current?.click()}
+        >
+          Excel-Datei laden
+        </button>
+      </div>
+
+      {/* ── Template Upload ── */}
+      <div className="mb-6 p-4 rounded-lg border border-dashed border-slate-600">
+        <p className="text-sm font-medium text-slate-300 mb-2">Hintergrund-Template</p>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        {bgImage ? (
+          <div className="flex items-center gap-3">
+            <img src={bgImage} alt="Template" className="w-16 h-28 object-cover rounded" />
+            <div>
+              <p className="text-xs text-slate-400">Template aktiv</p>
+              <button
+                type="button"
+                className="text-xs text-red-400 hover:text-red-300 mt-1 transition-colors"
+                onClick={onBgRemove}
+              >
+                Entfernen
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="text-sm bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Bild hochladen
+          </button>
+        )}
+      </div>
+
+      {/* ── Thema ── */}
       <Field label="Thema">
         <input
           type="text"
@@ -63,7 +191,7 @@ export default function StoryForm({ formData, onChange, onExport, onReset }) {
         <CharCount value={formData.tag} max={MAX.tag} />
       </Field>
 
-      {/* Titel */}
+      {/* ── Titel ── */}
       <Field label="Titel">
         <input
           type="text"
@@ -76,7 +204,7 @@ export default function StoryForm({ formData, onChange, onExport, onReset }) {
         <CharCount value={formData.title} max={MAX.title} />
       </Field>
 
-      {/* Subheadline */}
+      {/* ── Subheadline ── */}
       <Field label="Subheadline">
         <textarea
           className={`${INPUT_CLS} resize-none`}
@@ -89,7 +217,7 @@ export default function StoryForm({ formData, onChange, onExport, onReset }) {
         <CharCount value={formData.subheadline} max={MAX.subheadline} />
       </Field>
 
-      {/* Bullet Points */}
+      {/* ── Bullet Points ── */}
       <Field label="Bullet Points">
         <div className="space-y-2">
           {formData.bullets.map((bullet, idx) => (
@@ -131,7 +259,7 @@ export default function StoryForm({ formData, onChange, onExport, onReset }) {
         </button>
       </Field>
 
-      {/* CTA */}
+      {/* ── CTA ── */}
       <Field label="CTA / Footer Text">
         <input
           type="text"
@@ -144,7 +272,62 @@ export default function StoryForm({ formData, onChange, onExport, onReset }) {
         <CharCount value={formData.cta} max={MAX.cta} />
       </Field>
 
-      {/* Actions */}
+      {/* ── Schriftgröße & Abstände ── */}
+      <div className="mb-6 p-4 rounded-lg border border-slate-700 space-y-3">
+        <p className="text-sm font-medium text-slate-300 mb-1">Schriftgröße & Abstände</p>
+        <Slider
+          label="Titel"
+          value={settings.titleFontSize}
+          min={40}
+          max={120}
+          onChange={(v) => setSetting('titleFontSize', v)}
+        />
+        <Slider
+          label="Subheadline"
+          value={settings.subFontSize}
+          min={20}
+          max={60}
+          onChange={(v) => setSetting('subFontSize', v)}
+        />
+        <Slider
+          label="Bullets"
+          value={settings.bulletFontSize}
+          min={20}
+          max={60}
+          onChange={(v) => setSetting('bulletFontSize', v)}
+        />
+        <Slider
+          label="CTA"
+          value={settings.ctaFontSize}
+          min={20}
+          max={60}
+          onChange={(v) => setSetting('ctaFontSize', v)}
+        />
+        <Slider
+          label="Bullet-Abstand"
+          value={settings.bulletSpacing}
+          min={60}
+          max={160}
+          onChange={(v) => setSetting('bulletSpacing', v)}
+        />
+      </div>
+
+      {/* ── Farben ── */}
+      <div className="mb-6 p-4 rounded-lg border border-slate-700 space-y-3">
+        <p className="text-sm font-medium text-slate-300 mb-1">Farben</p>
+        <ColorPicker
+          label="Titel"
+          value={settings.titleColor}
+          onChange={(v) => setSetting('titleColor', v)}
+        />
+        <ColorPicker
+          label="Bulletpoints"
+          value={settings.bulletColor}
+          onChange={(v) => setSetting('bulletColor', v)}
+        />
+      </div>
+
+      {/* ── Actions ── */}
       <button
         type="button"
         className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-lg transition-colors mt-2"

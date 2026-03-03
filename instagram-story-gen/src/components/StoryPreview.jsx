@@ -5,8 +5,9 @@ const SCALE = 0.375
 const W = 1080
 const H = 1920
 
-export default function StoryPreview({ formData }) {
+export default function StoryPreview({ formData, settings, bgImage }) {
   const canvasRef = useRef(null)
+  const bgImageRef = useRef(null)
   const [fontsReady, setFontsReady] = useState(false)
 
   // Load fonts once on mount
@@ -14,7 +15,27 @@ export default function StoryPreview({ formData }) {
     loadFonts().then(() => setFontsReady(true))
   }, [])
 
-  // Re-render canvas whenever formData changes or fonts load
+  // Load background image when bgImage data URL changes
+  useEffect(() => {
+    if (!bgImage) {
+      bgImageRef.current = null
+      return
+    }
+    const img = new Image()
+    img.onload = () => {
+      bgImageRef.current = img
+      // Trigger re-render
+      const canvas = canvasRef.current
+      if (canvas && fontsReady) {
+        const ctx = canvas.getContext('2d')
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        renderCanvas(ctx, formData, SCALE, settings, img)
+      }
+    }
+    img.src = bgImage
+  }, [bgImage])
+
+  // Re-render canvas whenever formData, settings change or fonts load
   useEffect(() => {
     if (!fontsReady) return
     const canvas = canvasRef.current
@@ -22,8 +43,8 @@ export default function StoryPreview({ formData }) {
 
     const ctx = canvas.getContext('2d')
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    renderCanvas(ctx, formData, SCALE)
-  }, [formData, fontsReady])
+    renderCanvas(ctx, formData, SCALE, settings, bgImageRef.current)
+  }, [formData, settings, fontsReady, bgImage])
 
   return (
     <div>

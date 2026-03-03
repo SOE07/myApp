@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import StoryForm from './components/StoryForm'
 import StoryPreview from './components/StoryPreview'
-import renderCanvas, { loadFonts } from './utils/renderCanvas'
+import renderCanvas, { loadFonts, DEFAULT_SETTINGS } from './utils/renderCanvas'
 
 const INITIAL_DATA = {
   tag: '',
@@ -15,14 +15,14 @@ const INITIAL_DATA = {
   cta: '',
 }
 
-function exportPNG(formData) {
+function exportPNG(formData, settings, bgImage) {
   const canvas = document.createElement('canvas')
   canvas.width = 1080
   canvas.height = 1920
   const ctx = canvas.getContext('2d')
 
   loadFonts().then(() => {
-    renderCanvas(ctx, formData, 1)
+    renderCanvas(ctx, formData, 1, settings, bgImage)
 
     canvas.toBlob((blob) => {
       const url = URL.createObjectURL(blob)
@@ -38,9 +38,59 @@ function exportPNG(formData) {
 
 function App() {
   const [formData, setFormData] = useState(INITIAL_DATA)
+  const [settings, setSettings] = useState({ ...DEFAULT_SETTINGS })
+  const [bgImage, setBgImage] = useState(null)
+  const bgImageRef = useRef(null)
 
-  const handleExport = useCallback(() => exportPNG(formData), [formData])
-  const handleReset = useCallback(() => setFormData(INITIAL_DATA), [])
+  const handleExport = useCallback(
+    () => exportPNG(formData, settings, bgImageRef.current),
+    [formData, settings],
+  )
+  const handleReset = useCallback(() => {
+    setFormData(INITIAL_DATA)
+    setSettings({ ...DEFAULT_SETTINGS })
+    setBgImage(null)
+    bgImageRef.current = null
+  }, [])
+
+  const handleBgUpload = useCallback((file) => {
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        bgImageRef.current = img
+        setBgImage(e.target.result)
+      }
+      img.src = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }, [])
+
+  const handleBgRemove = useCallback(() => {
+    setBgImage(null)
+    bgImageRef.current = null
+  }, [])
+
+  const handleExcelImport = useCallback((rows) => {
+    if (!rows || rows.length === 0) return
+    const row = rows[0]
+    setFormData((prev) => ({
+      ...prev,
+      tag: row['Thema'] ?? row['thema'] ?? row['Tag'] ?? row['tag'] ?? prev.tag,
+      title: row['Titel'] ?? row['titel'] ?? row['Title'] ?? row['title'] ?? prev.title,
+      subheadline:
+        row['Subheadline'] ?? row['subheadline'] ?? row['Sub'] ?? row['sub'] ?? prev.subheadline,
+      bullets: [
+        row['Bullet1'] ?? row['bullet1'] ?? row['Bullet 1'] ?? '',
+        row['Bullet2'] ?? row['bullet2'] ?? row['Bullet 2'] ?? '',
+        row['Bullet3'] ?? row['bullet3'] ?? row['Bullet 3'] ?? '',
+        row['Bullet4'] ?? row['bullet4'] ?? row['Bullet 4'] ?? '',
+        row['Bullet5'] ?? row['bullet5'] ?? row['Bullet 5'] ?? '',
+      ].filter((b) => b),
+      cta: row['CTA'] ?? row['cta'] ?? row['Footer'] ?? row['footer'] ?? prev.cta,
+    }))
+  }, [])
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
@@ -59,6 +109,12 @@ function App() {
           <StoryForm
             formData={formData}
             onChange={setFormData}
+            settings={settings}
+            onSettingsChange={setSettings}
+            bgImage={bgImage}
+            onBgUpload={handleBgUpload}
+            onBgRemove={handleBgRemove}
+            onExcelImport={handleExcelImport}
             onExport={handleExport}
             onReset={handleReset}
           />
@@ -66,7 +122,7 @@ function App() {
 
         {/* Right: Preview (sticky) */}
         <div className="order-1 lg:order-2 lg:sticky lg:top-6 lg:self-start flex justify-center">
-          <StoryPreview formData={formData} />
+          <StoryPreview formData={formData} settings={settings} bgImage={bgImage} />
         </div>
       </main>
     </div>
