@@ -4,15 +4,15 @@ import StoryPreview from './components/StoryPreview'
 import renderCanvas, { loadFonts } from './utils/renderCanvas'
 
 const INITIAL_DATA = {
-  tag: 'Trading',
-  title: '3 Fehler die Anfänger teuer bezahlen',
-  subheadline: 'Lerne aus meinen Fehlern bevor du eigenes Kapital riskierst',
+  tag: '',
+  title: 'Zeit für einen Strategie-Check',
+  subheadline: 'Lass dich nicht von Kursen treiben.',
   bullets: [
-    'Zu früh nachkaufen bei Verlust',
-    'Kein Stop-Loss gesetzt',
-    'FOMO Käufe am Hoch',
+    'Überprüfe deine aktuelle Strategie',
+    'Passe Ziele an die Marktlage an',
+    'Setze klare Regeln für Ein- und Ausstiege',
   ],
-  cta: 'Folge mir für tägliche Trading-Insights',
+  cta: '',
 }
 
 function exportPNG(formData) {
@@ -46,8 +46,8 @@ function App() {
     <div className="min-h-screen bg-slate-900 text-white">
       {/* Header */}
       <header className="px-6 py-4 flex items-center gap-3 border-b border-slate-800">
-        <div className="w-8 h-8 rounded-lg bg-yellow-500 flex items-center justify-center">
-          <span className="text-slate-900 font-bold text-sm">SG</span>
+        <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center">
+          <span className="text-white font-bold text-sm">SG</span>
         </div>
         <h1 className="text-lg font-semibold tracking-tight">Story Generator</h1>
       </header>

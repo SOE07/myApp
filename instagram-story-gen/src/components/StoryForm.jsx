@@ -28,7 +28,7 @@ function Field({ label, children }) {
 }
 
 const INPUT_CLS =
-  'w-full bg-slate-900 text-white text-sm rounded-lg border border-slate-600 px-3 py-2.5 outline-none placeholder:text-slate-500 focus:border-yellow-500 transition-colors'
+  'w-full bg-slate-900 text-white text-sm rounded-lg border border-slate-600 px-3 py-2.5 outline-none placeholder:text-slate-500 focus:border-purple-500 transition-colors'
 
 export default function StoryForm({ formData, onChange, onExport, onReset }) {
   const set = (key, value) => onChange({ ...formData, [key]: value })
@@ -123,7 +123,7 @@ export default function StoryForm({ formData, onChange, onExport, onReset }) {
 
         <button
           type="button"
-          className="mt-2 text-sm text-yellow-500 hover:text-yellow-400 disabled:text-slate-600 disabled:cursor-not-allowed transition-colors"
+          className="mt-2 text-sm text-purple-400 hover:text-purple-300 disabled:text-slate-600 disabled:cursor-not-allowed transition-colors"
           disabled={formData.bullets.length >= MAX.bullets}
           onClick={addBullet}
         >
@@ -147,7 +147,7 @@ export default function StoryForm({ formData, onChange, onExport, onReset }) {
       {/* Actions */}
       <button
         type="button"
-        className="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-3 rounded-lg transition-colors mt-2"
+        className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-lg transition-colors mt-2"
         onClick={onExport}
       >
         Story herunterladen
