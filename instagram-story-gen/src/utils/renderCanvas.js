@@ -16,6 +16,18 @@ const CONFIG = {
   borderWidth: 24,
 }
 
+// Default settings
+const DEFAULT_SETTINGS = {
+  titleFontSize: 76,
+  subFontSize: 38,
+  bulletFontSize: 36,
+  ctaFontSize: 32,
+  tagFontSize: 24,
+  titleColor: '#FFFFFF',
+  bulletColor: '#D4D4DD',
+  bulletSpacing: 100,
+}
+
 // Native canvas dimensions (before scaling)
 const W = 1080
 const H = 1920
@@ -89,9 +101,13 @@ export function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines = Infin
 // Internal draw helpers
 // ─────────────────────────────────────────────────────────────
 
-function drawBackground(ctx) {
+function drawBackground(ctx, bgImage) {
   ctx.fillStyle = CONFIG.bgDark
   ctx.fillRect(0, 0, W, H)
+
+  if (bgImage) {
+    ctx.drawImage(bgImage, 0, 0, W, H)
+  }
 }
 
 function drawBorders(ctx) {
@@ -172,47 +188,92 @@ function drawWireframeMesh(ctx) {
   ctx.restore()
 }
 
+// Tag / Thema ──────────────────────────────────────────────────
+function drawTag(ctx, tag, settings) {
+  if (!tag) return
+  const fontSize = settings.tagFontSize
+  const LEFT = 80
+  const TOP = 80
+
+  ctx.save()
+
+  // Draw tag pill background
+  ctx.font = `700 ${fontSize}px Outfit`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'top'
+  const text = tag.toUpperCase()
+  const metrics = ctx.measureText(text)
+  const pillW = metrics.width + 32
+  const pillH = fontSize + 20
+
+  ctx.fillStyle = CONFIG.accentColor
+  ctx.globalAlpha = 0.9
+  const radius = pillH / 2
+  ctx.beginPath()
+  ctx.moveTo(LEFT + radius, TOP)
+  ctx.lineTo(LEFT + pillW - radius, TOP)
+  ctx.arcTo(LEFT + pillW, TOP, LEFT + pillW, TOP + radius, radius)
+  ctx.arcTo(LEFT + pillW, TOP + pillH, LEFT + pillW - radius, TOP + pillH, radius)
+  ctx.lineTo(LEFT + radius, TOP + pillH)
+  ctx.arcTo(LEFT, TOP + pillH, LEFT, TOP + radius, radius)
+  ctx.arcTo(LEFT, TOP, LEFT + radius, TOP, radius)
+  ctx.closePath()
+  ctx.fill()
+
+  // Draw tag text
+  ctx.globalAlpha = 1
+  ctx.fillStyle = '#FFFFFF'
+  ctx.fillText(text, LEFT + 16, TOP + 10)
+
+  ctx.restore()
+}
+
 // Title ────────────────────────────────────────────────────────
-function drawTitle(ctx, title) {
-  const LINE_HEIGHT = 95
+function drawTitle(ctx, title, settings) {
+  const fontSize = settings.titleFontSize
+  const LINE_HEIGHT = Math.round(fontSize * 1.25)
   const LEFT = 80
   const TOP = 400
   ctx.save()
-  ctx.fillStyle = '#FFFFFF'
-  ctx.font = '800 76px Outfit'
+  ctx.fillStyle = settings.titleColor
+  ctx.font = `800 ${fontSize}px Outfit`
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
   const lastLineY = wrapText(ctx, title, LEFT, TOP, W - 160, LINE_HEIGHT, 3)
   ctx.restore()
-  return lastLineY
+  return lastLineY + LINE_HEIGHT
 }
 
 // Subheadline ──────────────────────────────────────────────────
-function drawSubheadline(ctx, text, startY) {
-  const LINE_HEIGHT = 52
+function drawSubheadline(ctx, text, startY, settings) {
+  const fontSize = settings.subFontSize
+  const LINE_HEIGHT = Math.round(fontSize * 1.37)
   const LEFT = 80
   ctx.save()
   ctx.fillStyle = '#C0C0CC'
-  ctx.font = '400 38px Inter'
+  ctx.font = `400 ${fontSize}px Inter`
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
   const lastLineY = wrapText(ctx, text, LEFT, startY, W - 160, LINE_HEIGHT, 2)
   ctx.restore()
-  return lastLineY
+  return lastLineY + LINE_HEIGHT
 }
 
 // Bullet points ────────────────────────────────────────────────
-function drawBullets(ctx, bullets, startY) {
-  if (!bullets || bullets.length === 0) return
-  const SPACING = 75
+function drawBullets(ctx, bullets, startY, settings) {
+  if (!bullets || bullets.length === 0) return startY
+  const SPACING = settings.bulletSpacing
+  const fontSize = settings.bulletFontSize
   const LEFT = 80
   let y = startY
 
   bullets.forEach((text) => {
+    if (!text) return
+
     // Teal chevron "›"
     ctx.save()
     ctx.fillStyle = CONFIG.tealColor
-    ctx.font = '600 34px Inter'
+    ctx.font = `600 ${fontSize}px Inter`
     ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
     ctx.fillText('\u203A', LEFT, y - 2)
@@ -220,8 +281,8 @@ function drawBullets(ctx, bullets, startY) {
 
     // Bullet text
     ctx.save()
-    ctx.fillStyle = '#D4D4DD'
-    ctx.font = '400 36px Inter'
+    ctx.fillStyle = settings.bulletColor
+    ctx.font = `400 ${fontSize}px Inter`
     ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
     ctx.fillText(text, LEFT + 40, y)
@@ -229,6 +290,24 @@ function drawBullets(ctx, bullets, startY) {
 
     y += SPACING
   })
+
+  return y
+}
+
+// CTA / Footer ─────────────────────────────────────────────────
+function drawCTA(ctx, cta, settings) {
+  if (!cta) return
+  const fontSize = settings.ctaFontSize
+  const LEFT = W / 2
+  const BOTTOM = H - 100
+
+  ctx.save()
+  ctx.fillStyle = CONFIG.tealColor
+  ctx.font = `600 ${fontSize}px Inter`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+  ctx.fillText(cta, LEFT, BOTTOM)
+  ctx.restore()
 }
 
 // Double chevron icon (bottom-right) ──────────────────────────
@@ -263,34 +342,45 @@ function drawChevronIcon(ctx) {
 // ─────────────────────────────────────────────────────────────
 // Main render function
 // ─────────────────────────────────────────────────────────────
-function renderCanvas(ctx, data, scale = 1) {
+function renderCanvas(ctx, data, scale = 1, settings = {}, bgImage = null) {
+  const s = { ...DEFAULT_SETTINGS, ...settings }
+
   ctx.save()
   ctx.scale(scale, scale)
 
-  // Layer 0: background
-  drawBackground(ctx)
+  // Layer 0: background (with optional template image)
+  drawBackground(ctx, bgImage)
 
-  // Layer 1: 3D wireframe mesh at bottom
-  drawWireframeMesh(ctx)
+  // Layer 1: 3D wireframe mesh at bottom (skip if custom bg)
+  if (!bgImage) {
+    drawWireframeMesh(ctx)
+  }
 
   // Layer 2: purple borders (left + top)
   drawBorders(ctx)
 
-  // Layer 3: title
-  const titleLastY = drawTitle(ctx, data.title)
+  // Layer 3: tag / Thema
+  drawTag(ctx, data.tag, s)
 
-  // Layer 4: subheadline – 40px below title
-  const subStartY = titleLastY + 76 + 40
-  const subLastY = drawSubheadline(ctx, data.subheadline, subStartY)
+  // Layer 4: title
+  const titleEndY = drawTitle(ctx, data.title, s)
 
-  // Layer 5: bullet points – 60px below subheadline
-  const bulletStartY = subLastY + 52 + 60
-  drawBullets(ctx, data.bullets, bulletStartY)
+  // Layer 5: subheadline – 40px below title
+  const subStartY = titleEndY + 40
+  const subEndY = drawSubheadline(ctx, data.subheadline, subStartY, s)
 
-  // Layer 6: double chevron icon bottom-right
+  // Layer 6: bullet points – 50px below subheadline
+  const bulletStartY = subEndY + 50
+  drawBullets(ctx, data.bullets, bulletStartY, s)
+
+  // Layer 7: CTA at bottom
+  drawCTA(ctx, data.cta, s)
+
+  // Layer 8: double chevron icon bottom-right
   drawChevronIcon(ctx)
 
   ctx.restore()
 }
 
+export { DEFAULT_SETTINGS }
 export default renderCanvas
