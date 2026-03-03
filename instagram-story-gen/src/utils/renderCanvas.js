@@ -27,27 +27,6 @@ let _fontsLoaded = false
 export async function loadFonts() {
   if (typeof document === 'undefined' || _fontsLoaded) return
 
-  const specs = [
-    {
-      family: 'Outfit',
-      // Google Fonts CSS API – browser resolves the best format automatically
-      src: 'url(https://fonts.googleapis.com/css2?family=Outfit:wght@800&display=swap)',
-      opts: { weight: '800' },
-    },
-    {
-      family: 'Inter',
-      src: 'url(https://fonts.googleapis.com/css2?family=Inter:wght@400&display=swap)',
-      opts: { weight: '400' },
-    },
-    {
-      family: 'Inter',
-      src: 'url(https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap)',
-      opts: { weight: '600' },
-    },
-  ]
-
-  // Inject a single combined <link> so the browser caches one request,
-  // then use the FontFace API to expose the families to the canvas context.
   const link = document.createElement('link')
   link.rel = 'stylesheet'
   link.href =
@@ -56,16 +35,16 @@ export async function loadFonts() {
 
   await document.fonts.ready
   await Promise.all([
-    document.fonts.load('800 1em Outfit'),
-    document.fonts.load('400 1em Inter'),
-    document.fonts.load('600 1em Inter'),
+    document.fonts.load('800 48px Outfit'),
+    document.fonts.load('400 36px Inter'),
+    document.fonts.load('600 28px Inter'),
   ])
 
   _fontsLoaded = true
 }
 
 // ─────────────────────────────────────────────────────────────
-// Helper: auto line-wrap with optional hard max-line clamping
+// Helper: auto line-wrap with optional max-line clamping
 //
 // @param  {CanvasRenderingContext2D} ctx
 // @param  {string}  text
@@ -156,7 +135,7 @@ function drawDecorCircle(ctx) {
   ctx.restore()
 }
 
-/** Cross-browser pill/rounded-rect path helper (does NOT call fill/stroke) */
+/** Cross-browser pill/rounded-rect path helper */
 function pathRoundRect(ctx, x, y, w, h, r) {
   if (typeof ctx.roundRect === 'function') {
     ctx.beginPath()
@@ -176,22 +155,20 @@ function pathRoundRect(ctx, x, y, w, h, r) {
   }
 }
 
-// 1. Brand-Badge ──────────────────────────────────────────────
+// 1. Brand-Badge (Y:80) ──────────────────────────────────────
 function drawBrandBadge(ctx) {
   const LEFT = 60
   const TOP = 80
-  const R = 20            // radius → 40 × 40 px badge
+  const R = 20 // radius → 40 × 40 px badge
   const cx = LEFT + R
-  const cy = TOP + R      // vertical center at Y = 100
+  const cy = TOP + R
 
-  // Gold circle
   ctx.save()
   ctx.fillStyle = CONFIG.accentColor
   ctx.beginPath()
   ctx.arc(cx, cy, R, 0, Math.PI * 2)
   ctx.fill()
 
-  // Initials inside badge
   ctx.fillStyle = CONFIG.bgDark
   ctx.font = '600 15px Inter'
   ctx.textAlign = 'center'
@@ -199,7 +176,6 @@ function drawBrandBadge(ctx) {
   ctx.fillText(CONFIG.brandInitials, cx, cy)
   ctx.restore()
 
-  // Brand name
   ctx.save()
   ctx.fillStyle = '#FFFFFF'
   ctx.font = '600 28px Inter'
@@ -209,7 +185,7 @@ function drawBrandBadge(ctx) {
   ctx.restore()
 }
 
-// 2. Theme tag (pill) ─────────────────────────────────────────
+// 2. Theme tag / pill (Y:180) ────────────────────────────────
 function drawThemeTag(ctx, tag) {
   if (!tag) return
   const LEFT = 60
@@ -223,32 +199,29 @@ function drawThemeTag(ctx, tag) {
   ctx.save()
   ctx.font = `600 ${FONT_SIZE}px Inter`
 
-  // Account for letter-spacing in width calculation
   const textW = ctx.measureText(text).width + (text.length - 1) * LETTER_SPACING
   const badgeW = textW + PAD_X * 2
   const badgeH = FONT_SIZE + PAD_Y * 2
 
-  // Pill fill
   ctx.fillStyle = CONFIG.accentColor
   pathRoundRect(ctx, LEFT, TOP, badgeW, badgeH, badgeH / 2)
   ctx.fill()
 
-  // Label
   ctx.fillStyle = CONFIG.bgDark
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  try { ctx.letterSpacing = `${LETTER_SPACING}px` } catch (_) { /* older envs */ }
+  try { ctx.letterSpacing = `${LETTER_SPACING}px` } catch { /* older browsers */ }
   ctx.fillText(text, LEFT + PAD_X, TOP + badgeH / 2)
   ctx.restore()
 }
 
-// 3. Divider line ─────────────────────────────────────────────
+// 3. Divider line (Y:240) ────────────────────────────────────
 function drawDivider(ctx, y) {
   ctx.fillStyle = CONFIG.accentColor
   ctx.fillRect(60, y, 60, 3)
 }
 
-// 4. Title ────────────────────────────────────────────────────
+// 4. Title (Y:280) ───────────────────────────────────────────
 function drawTitle(ctx, title) {
   const LINE_HEIGHT = 90
   ctx.save()
@@ -258,10 +231,10 @@ function drawTitle(ctx, title) {
   ctx.textBaseline = 'top'
   const lastLineY = wrapText(ctx, title, 60, 280, W - 120, LINE_HEIGHT, 2)
   ctx.restore()
-  return { lastLineY, lineHeight: LINE_HEIGHT }
+  return lastLineY
 }
 
-// 5. Subheadline ──────────────────────────────────────────────
+// 5. Subheadline (Y: nach Titel + 30px) ──────────────────────
 function drawSubheadline(ctx, text, startY) {
   const LINE_HEIGHT = 52
   ctx.save()
@@ -271,17 +244,16 @@ function drawSubheadline(ctx, text, startY) {
   ctx.textBaseline = 'top'
   const lastLineY = wrapText(ctx, text, 60, startY, W - 120, LINE_HEIGHT, 2)
   ctx.restore()
-  return { lastLineY, lineHeight: LINE_HEIGHT }
+  return lastLineY
 }
 
-// 6. Bullet points ────────────────────────────────────────────
+// 6. Bullet points (Y: nach Sub + 60px) ──────────────────────
 function drawBullets(ctx, bullets, startY) {
   if (!bullets || bullets.length === 0) return
   const SPACING = 70
   let y = startY
 
   bullets.forEach((text) => {
-    // ▶ icon in gold
     ctx.save()
     ctx.fillStyle = CONFIG.accentColor
     ctx.font = '600 26px Inter'
@@ -290,7 +262,6 @@ function drawBullets(ctx, bullets, startY) {
     ctx.fillText('\u25B6', 60, y + 18)
     ctx.restore()
 
-    // Bullet text
     ctx.save()
     ctx.fillStyle = '#E2E8F0'
     ctx.font = '400 36px Inter'
@@ -303,9 +274,8 @@ function drawBullets(ctx, bullets, startY) {
   })
 }
 
-// 7. CTA footer ───────────────────────────────────────────────
+// 7. CTA footer (Y:1780) ─────────────────────────────────────
 function drawCTAFooter(ctx, cta) {
-  // Thin separator above CTA
   ctx.save()
   ctx.fillStyle = '#64748B'
   ctx.globalAlpha = 0.4
@@ -329,7 +299,7 @@ function drawCTAFooter(ctx, cta) {
 // @param {Object}  data
 //   @param {string}   data.tag          – Theme pill label
 //   @param {string}   data.title        – Main headline (max 2 lines)
-//   @param {string}   data.subheadline  – Supporting copy  (max 2 lines)
+//   @param {string}   data.subheadline  – Supporting copy (max 2 lines)
 //   @param {string[]} data.bullets      – Array of bullet strings
 //   @param {string}   [data.cta]        – Footer call-to-action text
 // @param {number}  scale  1 = full export (1080×1920) | 0.375 = preview (405×720)
@@ -338,32 +308,32 @@ function renderCanvas(ctx, data, scale = 1) {
   ctx.save()
   ctx.scale(scale, scale)
 
-  // ── Layer 0: background ──────────────────────────────────
+  // Layer 0: background
   drawBackground(ctx)
   drawGrid(ctx)
   drawDecorCircle(ctx)
 
-  // ── Layer 1: brand header ────────────────────────────────
+  // Layer 1: brand header
   drawBrandBadge(ctx)
 
-  // ── Layer 2: theme tag ───────────────────────────────────
+  // Layer 2: theme tag
   drawThemeTag(ctx, data.tag)
 
-  // ── Layer 3: gold divider ────────────────────────────────
+  // Layer 3: gold divider
   drawDivider(ctx, 240)
 
-  // ── Layer 4: title (dynamic height) ─────────────────────
-  const { lastLineY: titleY, lineHeight: titleLH } = drawTitle(ctx, data.title)
+  // Layer 4: title (dynamic height)
+  const titleLastY = drawTitle(ctx, data.title)
 
-  // ── Layer 5: subheadline ─────────────────────────────────
-  const subStart = titleY + titleLH + 30
-  const { lastLineY: subY, lineHeight: subLH } = drawSubheadline(ctx, data.subheadline, subStart)
+  // Layer 5: subheadline – 30px below title's last line
+  const subStartY = titleLastY + 72 + 30
+  const subLastY = drawSubheadline(ctx, data.subheadline, subStartY)
 
-  // ── Layer 6: bullet points ───────────────────────────────
-  const bulletStart = subY + subLH + 60
-  drawBullets(ctx, data.bullets, bulletStart)
+  // Layer 6: bullet points – 60px below subheadline's last line
+  const bulletStartY = subLastY + 52 + 60
+  drawBullets(ctx, data.bullets, bulletStartY)
 
-  // ── Layer 7: CTA footer (anchored to bottom) ─────────────
+  // Layer 7: CTA footer (anchored to bottom)
   drawCTAFooter(ctx, data.cta)
 
   ctx.restore()
@@ -407,20 +377,18 @@ export default renderCanvas
    // await loadFonts()
    // renderCanvas(ctx, EXAMPLE_DATA, 1)
    // const blob = await new Promise(r => canvas.toBlob(r, 'image/png'))
-   // const url  = URL.createObjectURL(blob)   // → download / <img src>
+   // const url  = URL.createObjectURL(blob)
 
-   // ── Additional test data sets ────────────────────────────
+   // ── Test: Short title (1 line) ───────────────────────────
+   // { tag: 'Strategie', title: 'Long-Setup im Anzug', subheadline: 'Einstieg bei Pullback.', bullets: [], cta: null }
 
-   // Short title (1 line):
-   // { tag: 'Strategie', title: 'Long-Setup im Anzug', subheadline: '...', bullets: [], cta: null }
+   // ── Test: Long title (2 lines, truncation) ───────────────
+   // { tag: 'News', title: 'Fed hält Zinsen stabil – Märkte reagieren mit starken Kursgewinnen in allen Sektoren', subheadline: 'Die Entscheidung war erwartet.', bullets: ['Tech-Sektor +3.2%'], cta: 'Mehr auf @TradingInsights' }
 
-   // Long title (2 lines, truncation test):
-   // { tag: 'News', title: 'Fed hält Zinsen stabil – Märkte reagieren mit starken Kursgewinnen in allen Sektoren', ... }
-
-   // No bullets:
+   // ── Test: No bullets / no CTA ────────────────────────────
    // { tag: 'Quote', title: '"Der Trend ist dein Freund."', subheadline: '– Jesse Livermore', bullets: [], cta: undefined }
 
-   // Many bullets (overflow check):
-   // { ..., bullets: ['A', 'B', 'C', 'D', 'E', 'F'] }  // some may overlap CTA – by design limit to ≤ 5
+   // ── Test: Many bullets (overflow check, limit ≤ 5) ───────
+   // { tag: 'Setup', title: 'Checkliste', subheadline: 'Vor jedem Trade prüfen:', bullets: ['Trend bestätigt', 'Volumen steigt', 'Risk/Reward > 2:1', 'Stop-Loss gesetzt', 'Kein News-Event'], cta: 'Speichern!' }
 
    ───────────────────────────────────────────────────────────── */
