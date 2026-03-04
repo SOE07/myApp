@@ -364,6 +364,29 @@ export default function StoryForm({
               />
             )}
           </div>
+
+          {/* ── Seitenangabe ── */}
+          <div className="mb-5 p-4 rounded-lg border border-slate-700 space-y-3">
+            <p className="text-sm font-medium text-slate-300 mb-1">Seitenangabe</p>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-400 w-28 shrink-0">Anzeigen</span>
+              <button
+                type="button"
+                className={`relative w-10 h-5 rounded-full transition-colors ${settings.showPageNumber ? 'bg-purple-500' : 'bg-slate-600'}`}
+                onClick={() => setSetting('showPageNumber', !settings.showPageNumber)}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${settings.showPageNumber ? 'translate-x-5' : ''}`}
+                />
+              </button>
+              <span className="text-xs text-slate-500">
+                {settings.showPageNumber ? 'Ein' : 'Aus'}
+              </span>
+            </div>
+            {settings.showPageNumber && (
+              <p className="text-xs text-slate-500">z.B. &quot;1 von {slideCount}&quot;</p>
+            )}
+          </div>
         </div>
       </div>
 

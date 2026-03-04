@@ -29,7 +29,7 @@ export default function StoryPreview({ formData, settings, bgImage, slideIndex, 
       if (canvas && fontsReady) {
         const ctx = canvas.getContext('2d')
         ctx.clearRect(0, 0, canvas.width, canvas.height)
-        renderCanvas(ctx, formData, SCALE, settings, img)
+        renderCanvas(ctx, formData, SCALE, settings, img, slideIndex, slideCount)
       }
     }
     img.src = bgImage
@@ -43,8 +43,8 @@ export default function StoryPreview({ formData, settings, bgImage, slideIndex, 
 
     const ctx = canvas.getContext('2d')
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    renderCanvas(ctx, formData, SCALE, settings, bgImageRef.current)
-  }, [formData, settings, fontsReady, bgImage])
+    renderCanvas(ctx, formData, SCALE, settings, bgImageRef.current, slideIndex, slideCount)
+  }, [formData, settings, fontsReady, bgImage, slideIndex, slideCount])
 
   return (
     <div>
