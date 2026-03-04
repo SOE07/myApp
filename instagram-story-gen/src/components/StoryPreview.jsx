@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
-import renderCanvas, { loadFonts } from '../utils/renderCanvas'
+import renderCanvas, { loadFonts, FORMATS } from '../utils/renderCanvas'
 
 const SCALE = 0.375
-const W = 1080
-const H = 1920
 
 export default function StoryPreview({ formData, settings, bgImage, slideIndex, slideCount }) {
   const canvasRef = useRef(null)
   const bgImageRef = useRef(null)
   const [fontsReady, setFontsReady] = useState(false)
+
+  const fmt = FORMATS[settings.format] || FORMATS.story
+  const W = fmt.w
+  const H = fmt.h
 
   // Load fonts once on mount
   useEffect(() => {
@@ -24,7 +26,6 @@ export default function StoryPreview({ formData, settings, bgImage, slideIndex, 
     const img = new Image()
     img.onload = () => {
       bgImageRef.current = img
-      // Trigger re-render
       const canvas = canvasRef.current
       if (canvas && fontsReady) {
         const ctx = canvas.getContext('2d')
@@ -49,7 +50,7 @@ export default function StoryPreview({ formData, settings, bgImage, slideIndex, 
   return (
     <div>
       <p className="text-xs text-slate-500 mb-2 tracking-wide">
-        Vorschau &middot; 1080 &times; 1920 px
+        Vorschau &middot; {W} &times; {H} px
         {slideCount > 1 && <> &middot; Slide {slideIndex + 1} von {slideCount}</>}
       </p>
       <canvas

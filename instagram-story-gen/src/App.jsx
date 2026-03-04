@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import StoryForm from './components/StoryForm'
 import StoryPreview from './components/StoryPreview'
 import SlideNav from './components/SlideNav'
-import renderCanvas, { loadFonts, DEFAULT_SETTINGS } from './utils/renderCanvas'
+import renderCanvas, { loadFonts, DEFAULT_SETTINGS, FORMATS } from './utils/renderCanvas'
 
 const INITIAL_DATA = {
   tag: '',
@@ -47,11 +47,10 @@ async function exportSlides(slides, settings) {
 
   for (let i = 0; i < slides.length; i++) {
     const slide = slides[i]
+    const fmt = FORMATS[settings.format] || FORMATS.story
     const canvas = document.createElement('canvas')
-    canvas.setAttribute('width', '1080')
-    canvas.setAttribute('height', '1920')
-    canvas.width = 1080
-    canvas.height = 1920
+    canvas.width = fmt.w
+    canvas.height = fmt.h
 
     const ctx = canvas.getContext('2d')
 
