@@ -318,15 +318,13 @@ function drawBullets(ctx, bullets, startY, settings) {
 function drawCTA(ctx, cta, settings) {
   if (!cta) return
   const fontSize = settings.ctaFontSize
-  const LEFT = W / 2
-  const BOTTOM = H - 100
 
   ctx.save()
   ctx.fillStyle = CONFIG.tealColor
   ctx.font = `600 ${fontSize}px Inter`
   ctx.textAlign = 'center'
-  ctx.textBaseline = 'top'
-  ctx.fillText(cta, LEFT, BOTTOM)
+  ctx.textBaseline = 'middle'
+  ctx.fillText(cta, W / 2, H - 110)
   ctx.restore()
 }
 
@@ -336,51 +334,26 @@ function drawPageNumber(ctx, slideIndex, slideCount, settings) {
 
   const text = `${slideIndex + 1} von ${slideCount}`
   const fontSize = 28
-  const x = W / 2
-  const y = H - 60
 
   ctx.save()
   ctx.font = `600 ${fontSize}px Inter`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
-  ctx.fillText(text, x, y)
+  ctx.fillText(text, W / 2, H - 55)
   ctx.restore()
 }
 
-// Double chevron icon (bottom-right) ──────────────────────────
-function drawChevronIcon(ctx) {
-  const x = W - 140
-  const y = H - 200
-
+// Footer separator line ───────────────────────────────────────
+function drawFooterSeparator(ctx) {
   ctx.save()
   ctx.strokeStyle = CONFIG.tealColor
-  ctx.lineWidth = 5
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
-  ctx.globalAlpha = 0.8
-
-  // First chevron
+  ctx.globalAlpha = 0.15
+  ctx.lineWidth = 1
   ctx.beginPath()
-  ctx.moveTo(x, y)
-  ctx.lineTo(x + 25, y + 30)
-  ctx.lineTo(x, y + 60)
+  ctx.moveTo(80, H - 160)
+  ctx.lineTo(W - 80, H - 160)
   ctx.stroke()
-
-  // Second chevron
-  ctx.beginPath()
-  ctx.moveTo(x + 30, y)
-  ctx.lineTo(x + 55, y + 30)
-  ctx.lineTo(x + 30, y + 60)
-  ctx.stroke()
-
-  // Third chevron
-  ctx.beginPath()
-  ctx.moveTo(x + 60, y)
-  ctx.lineTo(x + 85, y + 30)
-  ctx.lineTo(x + 60, y + 60)
-  ctx.stroke()
-
   ctx.restore()
 }
 
@@ -418,14 +391,14 @@ function renderCanvas(ctx, data, scale = 1, settings = {}, bgImage = null, slide
   const bulletStartY = subEndY + 50
   drawBullets(ctx, data.bullets, bulletStartY, s)
 
-  // Layer 7: CTA at bottom
+  // Layer 7: footer separator
+  drawFooterSeparator(ctx)
+
+  // Layer 8: CTA at bottom
   drawCTA(ctx, data.cta, s)
 
-  // Layer 8: page indicator (top-right)
+  // Layer 9: page indicator (bottom center)
   drawPageNumber(ctx, slideIndex, slideCount, s)
-
-  // Layer 9: double chevron icon bottom-right
-  drawChevronIcon(ctx)
 
   ctx.restore()
 }
