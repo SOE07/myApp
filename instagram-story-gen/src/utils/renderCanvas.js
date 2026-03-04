@@ -336,12 +336,12 @@ function drawPageNumber(ctx, slideIndex, slideCount, settings) {
 
   const text = `${slideIndex + 1} von ${slideCount}`
   const fontSize = 28
-  const x = W - 80
-  const y = 88
+  const x = W / 2
+  const y = H - 60
 
   ctx.save()
   ctx.font = `600 ${fontSize}px Inter`
-  ctx.textAlign = 'right'
+  ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
   ctx.fillText(text, x, y)
