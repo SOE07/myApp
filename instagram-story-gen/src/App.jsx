@@ -6,13 +6,9 @@ import renderCanvas, { loadFonts, DEFAULT_SETTINGS } from './utils/renderCanvas'
 
 const INITIAL_DATA = {
   tag: '',
-  title: 'Zeit für einen Strategie-Check',
-  subheadline: 'Lass dich nicht von Kursen treiben.',
-  bullets: [
-    'Überprüfe deine aktuelle Strategie',
-    'Passe Ziele an die Marktlage an',
-    'Setze klare Regeln für Ein- und Ausstiege',
-  ],
+  title: '',
+  subheadline: '',
+  bullets: [],
   cta: '',
   bgImage: null,
 }
