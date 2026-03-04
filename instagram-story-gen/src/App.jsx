@@ -103,9 +103,9 @@ function App() {
       </header>
 
       {/* Main layout */}
-      <main className="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-8">
+      <main className="max-w-[1600px] mx-auto p-6 grid grid-cols-1 xl:grid-cols-[1fr_auto] gap-8">
         {/* Left: Form (scrollable) */}
-        <div className="order-2 lg:order-1 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:pr-2">
+        <div className="order-2 xl:order-1 xl:max-h-[calc(100vh-5rem)] xl:overflow-y-auto xl:pr-2">
           <StoryForm
             formData={formData}
             onChange={setFormData}
@@ -121,7 +121,7 @@ function App() {
         </div>
 
         {/* Right: Preview (sticky) */}
-        <div className="order-1 lg:order-2 lg:sticky lg:top-6 lg:self-start flex justify-center">
+        <div className="order-1 xl:order-2 xl:sticky xl:top-6 xl:self-start flex justify-center">
           <StoryPreview formData={formData} settings={settings} bgImage={bgImage} />
         </div>
       </main>
