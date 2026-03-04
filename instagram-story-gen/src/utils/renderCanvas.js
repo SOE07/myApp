@@ -28,6 +28,7 @@ const DEFAULT_SETTINGS = {
   bulletSpacing: 100,
   showBorder: true,
   borderColor: '#7B2FF7',
+  showPageNumber: false,
 }
 
 // Native canvas dimensions (before scaling)
@@ -329,6 +330,24 @@ function drawCTA(ctx, cta, settings) {
   ctx.restore()
 }
 
+// Page indicator (e.g. "1 von 3") ─────────────────────────────
+function drawPageNumber(ctx, slideIndex, slideCount, settings) {
+  if (!settings.showPageNumber || slideCount <= 1) return
+
+  const text = `${slideIndex + 1} von ${slideCount}`
+  const fontSize = 28
+  const x = W - 80
+  const y = 88
+
+  ctx.save()
+  ctx.font = `600 ${fontSize}px Inter`
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
+  ctx.fillText(text, x, y)
+  ctx.restore()
+}
+
 // Double chevron icon (bottom-right) ──────────────────────────
 function drawChevronIcon(ctx) {
   const x = W - 140
@@ -368,7 +387,7 @@ function drawChevronIcon(ctx) {
 // ─────────────────────────────────────────────────────────────
 // Main render function
 // ─────────────────────────────────────────────────────────────
-function renderCanvas(ctx, data, scale = 1, settings = {}, bgImage = null) {
+function renderCanvas(ctx, data, scale = 1, settings = {}, bgImage = null, slideIndex = 0, slideCount = 1) {
   const s = { ...DEFAULT_SETTINGS, ...settings }
 
   ctx.save()
@@ -402,7 +421,10 @@ function renderCanvas(ctx, data, scale = 1, settings = {}, bgImage = null) {
   // Layer 7: CTA at bottom
   drawCTA(ctx, data.cta, s)
 
-  // Layer 8: double chevron icon bottom-right
+  // Layer 8: page indicator (top-right)
+  drawPageNumber(ctx, slideIndex, slideCount, s)
+
+  // Layer 9: double chevron icon bottom-right
   drawChevronIcon(ctx)
 
   ctx.restore()

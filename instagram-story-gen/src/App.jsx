@@ -53,7 +53,7 @@ async function exportSlides(slides, settings) {
     const ctx = canvas.getContext('2d')
 
     const bgImg = slide.bgImage ? await loadImage(slide.bgImage) : null
-    renderCanvas(ctx, slide, 1, settings, bgImg)
+    renderCanvas(ctx, slide, 1, settings, bgImg, i, slides.length)
 
     await new Promise((resolve) => {
       canvas.toBlob((blob) => {
