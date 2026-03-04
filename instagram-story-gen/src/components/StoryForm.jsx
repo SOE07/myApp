@@ -387,6 +387,30 @@ export default function StoryForm({
               <p className="text-xs text-slate-500">z.B. &quot;1 von {slideCount}&quot;</p>
             )}
           </div>
+
+          {/* ── Format ── */}
+          <div className="mb-5 p-4 rounded-lg border border-slate-700 space-y-3">
+            <p className="text-sm font-medium text-slate-300 mb-1">Export-Format</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className={`flex-1 text-sm py-2 px-3 rounded-lg border transition-colors ${settings.format === 'story' ? 'border-purple-500 bg-purple-500/20 text-white' : 'border-slate-600 text-slate-400 hover:border-slate-500'}`}
+                onClick={() => setSetting('format', 'story')}
+              >
+                Story (9:16)
+              </button>
+              <button
+                type="button"
+                className={`flex-1 text-sm py-2 px-3 rounded-lg border transition-colors ${settings.format === 'post' ? 'border-purple-500 bg-purple-500/20 text-white' : 'border-slate-600 text-slate-400 hover:border-slate-500'}`}
+                onClick={() => setSetting('format', 'post')}
+              >
+                Post (4:5)
+              </button>
+            </div>
+            <p className="text-xs text-slate-500">
+              {settings.format === 'story' ? '1080 × 1920 px' : '1080 × 1350 px'}
+            </p>
+          </div>
         </div>
       </div>
 
