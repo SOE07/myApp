@@ -64,7 +64,8 @@ async function exportSlides(slides, settings) {
         const num = slides.length > 1 ? `-${i + 1}` : ''
         a.download = `story-${slug}${num}-${Date.now()}.png`
         a.click()
-        URL.revokeObjectURL(url)
+        // Delay revoke so the browser has time to start the download
+        setTimeout(() => URL.revokeObjectURL(url), 3000)
         resolve()
       }, 'image/png')
     })
