@@ -73,6 +73,7 @@ export default function StoryForm({
   bgImage,
   onBgUpload,
   onBgRemove,
+  onBgPreset,
   onExcelImport,
   onExport,
   onReset,
@@ -149,9 +150,39 @@ export default function StoryForm({
             </button>
           </div>
 
-          {/* ── Template Upload ── */}
+          {/* ── Hintergrund ── */}
           <div className="mb-5 p-4 rounded-lg border border-dashed border-slate-600">
-            <p className="text-sm font-medium text-slate-300 mb-2">Hintergrund-Template</p>
+            <p className="text-sm font-medium text-slate-300 mb-3">Hintergrund</p>
+
+            {/* Preset templates */}
+            <div className="grid grid-cols-4 gap-2 mb-3">
+              <button
+                type="button"
+                className={`relative rounded-lg overflow-hidden border-2 transition-colors aspect-[9/16] ${!bgImage ? 'border-purple-500' : 'border-slate-600 hover:border-slate-500'}`}
+                onClick={onBgRemove}
+              >
+                <div className="absolute inset-0 bg-[#08080F] flex items-center justify-center">
+                  <span className="text-[10px] text-slate-500">Keiner</span>
+                </div>
+              </button>
+              {[
+                { src: '/bg-candlestick.png', label: 'Candlestick' },
+                { src: '/bg-linechart.png', label: 'Depot' },
+                { src: '/bg-ticker.png', label: 'Ticker' },
+              ].map((tpl) => (
+                <button
+                  key={tpl.src}
+                  type="button"
+                  className={`relative rounded-lg overflow-hidden border-2 transition-colors aspect-[9/16] ${bgImage === tpl.src ? 'border-purple-500' : 'border-slate-600 hover:border-slate-500'}`}
+                  onClick={() => onBgPreset(tpl.src)}
+                >
+                  <img src={tpl.src} alt={tpl.label} className="absolute inset-0 w-full h-full object-cover" />
+                  <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[9px] text-slate-300 text-center py-0.5">{tpl.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Custom upload */}
             <input
               ref={fileInputRef}
               type="file"
@@ -159,29 +190,13 @@ export default function StoryForm({
               className="hidden"
               onChange={handleFileChange}
             />
-            {bgImage ? (
-              <div className="flex items-center gap-3">
-                <img src={bgImage} alt="Template" className="w-16 h-28 object-cover rounded" />
-                <div>
-                  <p className="text-xs text-slate-400">Template aktiv</p>
-                  <button
-                    type="button"
-                    className="text-xs text-red-400 hover:text-red-300 mt-1 transition-colors"
-                    onClick={onBgRemove}
-                  >
-                    Entfernen
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="text-sm bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                Bild hochladen
-              </button>
-            )}
+            <button
+              type="button"
+              className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Eigenes Bild hochladen
+            </button>
           </div>
 
           {/* ── Thema ── */}
