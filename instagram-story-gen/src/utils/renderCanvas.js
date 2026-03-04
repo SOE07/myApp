@@ -26,6 +26,8 @@ const DEFAULT_SETTINGS = {
   titleColor: '#FFFFFF',
   bulletColor: '#D4D4DD',
   bulletSpacing: 100,
+  showBorder: true,
+  borderColor: '#7B2FF7',
 }
 
 // Native canvas dimensions (before scaling)
@@ -110,14 +112,31 @@ function drawBackground(ctx, bgImage) {
   }
 }
 
-function drawBorders(ctx) {
-  const bw = CONFIG.borderWidth
+function drawBorders(ctx, settings) {
+  if (!settings.showBorder) return
 
-  // Create a purple gradient for the borders
+  const bw = CONFIG.borderWidth
+  const base = settings.borderColor
+
+  // Derive lighter and darker shades from the base color for gradient
+  const lighten = (hex, amt) => {
+    let r = parseInt(hex.slice(1, 3), 16)
+    let g = parseInt(hex.slice(3, 5), 16)
+    let b = parseInt(hex.slice(5, 7), 16)
+    r = Math.min(255, r + amt)
+    g = Math.min(255, g + amt)
+    b = Math.min(255, b + amt)
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+  }
+
+  const light = lighten(base, 32)
+  const dark = lighten(base, -32)
+
+  // Create gradient for the borders
   const grad = ctx.createLinearGradient(0, 0, 0, H)
-  grad.addColorStop(0, '#9B4DFF')
-  grad.addColorStop(0.5, '#7B2FF7')
-  grad.addColorStop(1, '#5B1FD7')
+  grad.addColorStop(0, light)
+  grad.addColorStop(0.5, base)
+  grad.addColorStop(1, dark)
 
   // Left border
   ctx.fillStyle = grad
@@ -125,9 +144,9 @@ function drawBorders(ctx) {
 
   // Top border
   const topGrad = ctx.createLinearGradient(0, 0, W, 0)
-  topGrad.addColorStop(0, '#9B4DFF')
-  topGrad.addColorStop(0.5, '#7B2FF7')
-  topGrad.addColorStop(1, '#5B1FD7')
+  topGrad.addColorStop(0, light)
+  topGrad.addColorStop(0.5, base)
+  topGrad.addColorStop(1, dark)
   ctx.fillStyle = topGrad
   ctx.fillRect(0, 0, W, bw)
 }
@@ -336,6 +355,13 @@ function drawChevronIcon(ctx) {
   ctx.lineTo(x + 30, y + 60)
   ctx.stroke()
 
+  // Third chevron
+  ctx.beginPath()
+  ctx.moveTo(x + 60, y)
+  ctx.lineTo(x + 85, y + 30)
+  ctx.lineTo(x + 60, y + 60)
+  ctx.stroke()
+
   ctx.restore()
 }
 
@@ -356,8 +382,8 @@ function renderCanvas(ctx, data, scale = 1, settings = {}, bgImage = null) {
     drawWireframeMesh(ctx)
   }
 
-  // Layer 2: purple borders (left + top)
-  drawBorders(ctx)
+  // Layer 2: borders (left + top)
+  drawBorders(ctx, s)
 
   // Layer 3: tag / Thema
   drawTag(ctx, data.tag, s)
