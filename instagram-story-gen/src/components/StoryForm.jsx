@@ -327,6 +327,33 @@ export default function StoryForm({
         />
       </div>
 
+      {/* ── Rahmen / Border ── */}
+      <div className="mb-6 p-4 rounded-lg border border-slate-700 space-y-3">
+        <p className="text-sm font-medium text-slate-300 mb-1">Rahmen</p>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-slate-400 w-28 shrink-0">Anzeigen</span>
+          <button
+            type="button"
+            className={`relative w-10 h-5 rounded-full transition-colors ${settings.showBorder ? 'bg-purple-500' : 'bg-slate-600'}`}
+            onClick={() => setSetting('showBorder', !settings.showBorder)}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${settings.showBorder ? 'translate-x-5' : ''}`}
+            />
+          </button>
+          <span className="text-xs text-slate-500">
+            {settings.showBorder ? 'Ein' : 'Aus'}
+          </span>
+        </div>
+        {settings.showBorder && (
+          <ColorPicker
+            label="Rahmenfarbe"
+            value={settings.borderColor}
+            onChange={(v) => setSetting('borderColor', v)}
+          />
+        )}
+      </div>
+
       {/* ── Actions ── */}
       <button
         type="button"
