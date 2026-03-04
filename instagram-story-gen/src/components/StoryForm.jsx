@@ -76,6 +76,7 @@ export default function StoryForm({
   onExcelImport,
   onExport,
   onReset,
+  slideCount,
 }) {
   const fileInputRef = useRef(null)
   const excelInputRef = useRef(null)
@@ -373,7 +374,7 @@ export default function StoryForm({
           className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-lg transition-colors"
           onClick={onExport}
         >
-          Story herunterladen
+          Story herunterladen{slideCount > 1 ? ` (${slideCount} Slides)` : ''}
         </button>
 
         <div className="text-center mt-3">

@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback } from 'react'
 import StoryForm from './components/StoryForm'
 import StoryPreview from './components/StoryPreview'
+import SlideNav from './components/SlideNav'
 import renderCanvas, { loadFonts, DEFAULT_SETTINGS } from './utils/renderCanvas'
 
 const INITIAL_DATA = {
@@ -13,83 +14,169 @@ const INITIAL_DATA = {
     'Setze klare Regeln für Ein- und Ausstiege',
   ],
   cta: '',
+  bgImage: null,
 }
 
-function exportPNG(formData, settings, bgImage) {
-  const canvas = document.createElement('canvas')
-  canvas.width = 1080
-  canvas.height = 1920
-  const ctx = canvas.getContext('2d')
+// ─── Helpers ─────────────────────────────────────────────────
 
-  loadFonts().then(() => {
-    renderCanvas(ctx, formData, 1, settings, bgImage)
-
-    canvas.toBlob((blob) => {
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      const slug = (formData.tag || 'story').toLowerCase().replace(/\s+/g, '-')
-      a.download = `story-${slug}-${Date.now()}.png`
-      a.click()
-      URL.revokeObjectURL(url)
-    }, 'image/png')
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = src
   })
 }
 
-function App() {
-  const [formData, setFormData] = useState(INITIAL_DATA)
-  const [settings, setSettings] = useState({ ...DEFAULT_SETTINGS })
-  const [bgImage, setBgImage] = useState(null)
-  const bgImageRef = useRef(null)
+function parseExcelRow(row) {
+  return {
+    tag: row['Thema'] ?? row['thema'] ?? row['Tag'] ?? row['tag'] ?? '',
+    title: row['Titel'] ?? row['titel'] ?? row['Title'] ?? row['title'] ?? '',
+    subheadline:
+      row['Subheadline'] ?? row['subheadline'] ?? row['Sub'] ?? row['sub'] ?? '',
+    bullets: [
+      row['Bullet1'] ?? row['bullet1'] ?? row['Bullet 1'] ?? '',
+      row['Bullet2'] ?? row['bullet2'] ?? row['Bullet 2'] ?? '',
+      row['Bullet3'] ?? row['bullet3'] ?? row['Bullet 3'] ?? '',
+      row['Bullet4'] ?? row['bullet4'] ?? row['Bullet 4'] ?? '',
+      row['Bullet5'] ?? row['bullet5'] ?? row['Bullet 5'] ?? '',
+    ].filter((b) => b),
+    cta: row['CTA'] ?? row['cta'] ?? row['Footer'] ?? row['footer'] ?? '',
+    bgImage: null,
+  }
+}
 
-  const handleExport = useCallback(
-    () => exportPNG(formData, settings, bgImageRef.current),
-    [formData, settings],
-  )
-  const handleReset = useCallback(() => {
-    setFormData(INITIAL_DATA)
-    setSettings({ ...DEFAULT_SETTINGS })
-    setBgImage(null)
-    bgImageRef.current = null
-  }, [])
+async function exportSlides(slides, settings) {
+  await loadFonts()
 
-  const handleBgUpload = useCallback((file) => {
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const img = new Image()
-      img.onload = () => {
-        bgImageRef.current = img
-        setBgImage(e.target.result)
-      }
-      img.src = e.target.result
+  for (let i = 0; i < slides.length; i++) {
+    const slide = slides[i]
+    const canvas = document.createElement('canvas')
+    canvas.width = 1080
+    canvas.height = 1920
+    const ctx = canvas.getContext('2d')
+
+    const bgImg = slide.bgImage ? await loadImage(slide.bgImage) : null
+    renderCanvas(ctx, slide, 1, settings, bgImg)
+
+    await new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        const slug = (slide.tag || 'story').toLowerCase().replace(/\s+/g, '-')
+        const num = slides.length > 1 ? `-${i + 1}` : ''
+        a.download = `story-${slug}${num}-${Date.now()}.png`
+        a.click()
+        URL.revokeObjectURL(url)
+        resolve()
+      }, 'image/png')
+    })
+
+    // Small delay between downloads so the browser doesn't block them
+    if (i < slides.length - 1) {
+      await new Promise((r) => setTimeout(r, 300))
     }
-    reader.readAsDataURL(file)
+  }
+}
+
+// ─── App ─────────────────────────────────────────────────────
+
+function App() {
+  const [slides, setSlides] = useState([{ ...INITIAL_DATA }])
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [settings, setSettings] = useState({ ...DEFAULT_SETTINGS })
+
+  const activeSlide = slides[activeIndex] ?? slides[0]
+
+  // ── Slide CRUD ──
+
+  const updateActiveSlide = useCallback(
+    (data) => {
+      setSlides((prev) =>
+        prev.map((s, i) => (i === activeIndex ? { ...s, ...data } : s)),
+      )
+    },
+    [activeIndex],
+  )
+
+  const addSlide = useCallback(() => {
+    setSlides((prev) => {
+      const next = [...prev, { ...INITIAL_DATA }]
+      setActiveIndex(next.length - 1)
+      return next
+    })
   }, [])
+
+  const removeSlide = useCallback(
+    (index) => {
+      setSlides((prev) => {
+        if (prev.length <= 1) return prev
+        const next = prev.filter((_, i) => i !== index)
+        setActiveIndex((cur) => {
+          if (cur >= next.length) return next.length - 1
+          if (cur > index) return cur - 1
+          return cur
+        })
+        return next
+      })
+    },
+    [],
+  )
+
+  const duplicateSlide = useCallback((index) => {
+    setSlides((prev) => {
+      const copy = { ...prev[index], bullets: [...prev[index].bullets] }
+      const next = [...prev.slice(0, index + 1), copy, ...prev.slice(index + 1)]
+      setActiveIndex(index + 1)
+      return next
+    })
+  }, [])
+
+  // ── Background ──
+
+  const handleBgUpload = useCallback(
+    (file) => {
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = new Image()
+        img.onload = () => {
+          updateActiveSlide({ bgImage: e.target.result })
+        }
+        img.src = e.target.result
+      }
+      reader.readAsDataURL(file)
+    },
+    [updateActiveSlide],
+  )
 
   const handleBgRemove = useCallback(() => {
-    setBgImage(null)
-    bgImageRef.current = null
-  }, [])
+    updateActiveSlide({ bgImage: null })
+  }, [updateActiveSlide])
+
+  // ── Excel import: one slide per row ──
 
   const handleExcelImport = useCallback((rows) => {
     if (!rows || rows.length === 0) return
-    const row = rows[0]
-    setFormData((prev) => ({
-      ...prev,
-      tag: row['Thema'] ?? row['thema'] ?? row['Tag'] ?? row['tag'] ?? prev.tag,
-      title: row['Titel'] ?? row['titel'] ?? row['Title'] ?? row['title'] ?? prev.title,
-      subheadline:
-        row['Subheadline'] ?? row['subheadline'] ?? row['Sub'] ?? row['sub'] ?? prev.subheadline,
-      bullets: [
-        row['Bullet1'] ?? row['bullet1'] ?? row['Bullet 1'] ?? '',
-        row['Bullet2'] ?? row['bullet2'] ?? row['Bullet 2'] ?? '',
-        row['Bullet3'] ?? row['bullet3'] ?? row['Bullet 3'] ?? '',
-        row['Bullet4'] ?? row['bullet4'] ?? row['Bullet 4'] ?? '',
-        row['Bullet5'] ?? row['bullet5'] ?? row['Bullet 5'] ?? '',
-      ].filter((b) => b),
-      cta: row['CTA'] ?? row['cta'] ?? row['Footer'] ?? row['footer'] ?? prev.cta,
-    }))
+    const newSlides = rows.map(parseExcelRow)
+    setSlides(newSlides)
+    setActiveIndex(0)
+  }, [])
+
+  // ── Export ──
+
+  const handleExport = useCallback(
+    () => exportSlides(slides, settings),
+    [slides, settings],
+  )
+
+  // ── Reset ──
+
+  const handleReset = useCallback(() => {
+    setSlides([{ ...INITIAL_DATA }])
+    setActiveIndex(0)
+    setSettings({ ...DEFAULT_SETTINGS })
   }, [])
 
   return (
@@ -106,23 +193,38 @@ function App() {
       <main className="max-w-[1600px] mx-auto p-6 grid grid-cols-1 xl:grid-cols-[1fr_auto] gap-8">
         {/* Left: Form (scrollable) */}
         <div className="order-2 xl:order-1 xl:max-h-[calc(100vh-5rem)] xl:overflow-y-auto xl:pr-2">
+          <SlideNav
+            slides={slides}
+            activeIndex={activeIndex}
+            onSelect={setActiveIndex}
+            onAdd={addSlide}
+            onRemove={removeSlide}
+            onDuplicate={duplicateSlide}
+          />
           <StoryForm
-            formData={formData}
-            onChange={setFormData}
+            formData={activeSlide}
+            onChange={updateActiveSlide}
             settings={settings}
             onSettingsChange={setSettings}
-            bgImage={bgImage}
+            bgImage={activeSlide.bgImage}
             onBgUpload={handleBgUpload}
             onBgRemove={handleBgRemove}
             onExcelImport={handleExcelImport}
             onExport={handleExport}
             onReset={handleReset}
+            slideCount={slides.length}
           />
         </div>
 
         {/* Right: Preview (sticky) */}
         <div className="order-1 xl:order-2 xl:sticky xl:top-6 xl:self-start flex justify-center">
-          <StoryPreview formData={formData} settings={settings} bgImage={bgImage} />
+          <StoryPreview
+            formData={activeSlide}
+            settings={settings}
+            bgImage={activeSlide.bgImage}
+            slideIndex={activeIndex}
+            slideCount={slides.length}
+          />
         </div>
       </main>
     </div>

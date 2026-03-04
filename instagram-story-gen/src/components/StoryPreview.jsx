@@ -5,7 +5,7 @@ const SCALE = 0.375
 const W = 1080
 const H = 1920
 
-export default function StoryPreview({ formData, settings, bgImage }) {
+export default function StoryPreview({ formData, settings, bgImage, slideIndex, slideCount }) {
   const canvasRef = useRef(null)
   const bgImageRef = useRef(null)
   const [fontsReady, setFontsReady] = useState(false)
@@ -50,6 +50,7 @@ export default function StoryPreview({ formData, settings, bgImage }) {
     <div>
       <p className="text-xs text-slate-500 mb-2 tracking-wide">
         Vorschau &middot; 1080 &times; 1920 px
+        {slideCount > 1 && <> &middot; Slide {slideIndex + 1} von {slideCount}</>}
       </p>
       <canvas
         ref={canvasRef}
