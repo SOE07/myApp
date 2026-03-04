@@ -48,31 +48,30 @@ async function exportSlides(slides, settings) {
   for (let i = 0; i < slides.length; i++) {
     const slide = slides[i]
     const canvas = document.createElement('canvas')
+    canvas.setAttribute('width', '1080')
+    canvas.setAttribute('height', '1920')
     canvas.width = 1080
     canvas.height = 1920
+
     const ctx = canvas.getContext('2d')
 
     const bgImg = slide.bgImage ? await loadImage(slide.bgImage) : null
     renderCanvas(ctx, slide, 1, settings, bgImg, i, slides.length)
 
-    await new Promise((resolve) => {
-      canvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        const slug = (slide.tag || 'story').toLowerCase().replace(/\s+/g, '-')
-        const num = slides.length > 1 ? `-${i + 1}` : ''
-        a.download = `story-${slug}${num}-${Date.now()}.png`
-        a.click()
-        // Delay revoke so the browser has time to start the download
-        setTimeout(() => URL.revokeObjectURL(url), 3000)
-        resolve()
-      }, 'image/png')
-    })
+    // Use toDataURL for reliable full-resolution export
+    const dataURL = canvas.toDataURL('image/png')
+    const a = document.createElement('a')
+    const slug = (slide.tag || 'story').toLowerCase().replace(/\s+/g, '-')
+    const num = slides.length > 1 ? `-${i + 1}` : ''
+    a.download = `story-${slug}${num}.png`
+    a.href = dataURL
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
 
     // Small delay between downloads so the browser doesn't block them
     if (i < slides.length - 1) {
-      await new Promise((r) => setTimeout(r, 300))
+      await new Promise((r) => setTimeout(r, 500))
     }
   }
 }
