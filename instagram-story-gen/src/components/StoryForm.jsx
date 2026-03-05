@@ -84,6 +84,10 @@ export default function StoryForm({
   onExport,
   onReset,
   slideCount,
+  apiKey,
+  onApiKeyChange,
+  onGenerate,
+  isGenerating,
 }) {
   const fileInputRef = useRef(null)
   const excelInputRef = useRef(null)
@@ -132,6 +136,19 @@ export default function StoryForm({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* ══════ Left column: Inhalte ══════ */}
         <div>
+          {/* ── API Key ── */}
+          <div className="mb-5 p-4 rounded-lg border border-slate-700">
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Anthropic API Key</label>
+            <input
+              type="password"
+              className={INPUT_CLS}
+              placeholder="sk-ant-..."
+              value={apiKey}
+              onChange={(e) => onApiKeyChange(e.target.value)}
+            />
+            <p className="text-xs text-slate-500 mt-1">Wird nur lokal im Browser gespeichert.</p>
+          </div>
+
           <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wider mb-4">Inhalte</h2>
 
           {/* ── Excel Import ── */}
@@ -216,6 +233,26 @@ export default function StoryForm({
             />
             <CharCount value={formData.tag} max={MAX.tag} />
           </Field>
+
+          {/* ── KI Generate Button ── */}
+          <button
+            type="button"
+            disabled={isGenerating || !formData.tag.trim() || !apiKey.trim()}
+            className="w-full mb-5 py-2.5 px-4 rounded-lg border border-yellow-500 text-yellow-500 text-sm font-semibold hover:bg-yellow-500 hover:text-slate-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-yellow-500 flex items-center justify-center gap-2"
+            onClick={onGenerate}
+          >
+            {isGenerating ? (
+              <>
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Generiere...
+              </>
+            ) : (
+              'Mit KI generieren'
+            )}
+          </button>
 
           {/* ── Titel ── */}
           <Field label="Titel">
@@ -382,6 +419,13 @@ export default function StoryForm({
                   label="Rahmenfarbe"
                   value={settings.borderColor}
                   onChange={(v) => setSetting('borderColor', v)}
+                />
+                <Slider
+                  label="Breite"
+                  value={settings.borderWidth}
+                  min={4}
+                  max={60}
+                  onChange={(v) => setSetting('borderWidth', v)}
                 />
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-slate-400 w-28 shrink-0">Position</span>
