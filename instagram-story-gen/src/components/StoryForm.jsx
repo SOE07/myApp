@@ -377,11 +377,33 @@ export default function StoryForm({
               </span>
             </div>
             {settings.showBorder && (
-              <ColorPicker
-                label="Rahmenfarbe"
-                value={settings.borderColor}
-                onChange={(v) => setSetting('borderColor', v)}
-              />
+              <>
+                <ColorPicker
+                  label="Rahmenfarbe"
+                  value={settings.borderColor}
+                  onChange={(v) => setSetting('borderColor', v)}
+                />
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-slate-400 w-28 shrink-0">Position</span>
+                  <div className="flex gap-1.5">
+                    {[
+                      { key: 'borderLeft',   label: 'L' },
+                      { key: 'borderTop',    label: 'O' },
+                      { key: 'borderRight',  label: 'R' },
+                      { key: 'borderBottom', label: 'U' },
+                    ].map((side) => (
+                      <button
+                        key={side.key}
+                        type="button"
+                        className={`w-8 h-8 text-xs font-semibold rounded transition-colors ${settings[side.key] ? 'bg-purple-500 text-white' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'}`}
+                        onClick={() => setSetting(side.key, !settings[side.key])}
+                      >
+                        {side.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
           </div>
 
