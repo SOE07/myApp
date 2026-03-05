@@ -1,42 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
-import renderCanvas, { loadFonts, FORMATS } from '../utils/renderCanvas'
+import renderCanvas, { loadFonts } from '../utils/renderCanvas'
 
 const SCALE = 0.375
+const W = 1080
+const H = 1920
 
-export default function StoryPreview({ formData, settings, bgImage, slideIndex, slideCount }) {
+export default function StoryPreview({ formData }) {
   const canvasRef = useRef(null)
-  const bgImageRef = useRef(null)
   const [fontsReady, setFontsReady] = useState(false)
-
-  const fmt = FORMATS[settings.format] || FORMATS.story
-  const W = fmt.w
-  const H = fmt.h
 
   // Load fonts once on mount
   useEffect(() => {
     loadFonts().then(() => setFontsReady(true))
   }, [])
 
-  // Load background image when bgImage data URL changes
-  useEffect(() => {
-    if (!bgImage) {
-      bgImageRef.current = null
-      return
-    }
-    const img = new Image()
-    img.onload = () => {
-      bgImageRef.current = img
-      const canvas = canvasRef.current
-      if (canvas && fontsReady) {
-        const ctx = canvas.getContext('2d')
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
-        renderCanvas(ctx, formData, SCALE, settings, img, slideIndex, slideCount)
-      }
-    }
-    img.src = bgImage
-  }, [bgImage])
-
-  // Re-render canvas whenever formData, settings change or fonts load
+  // Re-render canvas whenever formData changes or fonts load
   useEffect(() => {
     if (!fontsReady) return
     const canvas = canvasRef.current
@@ -44,14 +22,13 @@ export default function StoryPreview({ formData, settings, bgImage, slideIndex, 
 
     const ctx = canvas.getContext('2d')
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    renderCanvas(ctx, formData, SCALE, settings, bgImageRef.current, slideIndex, slideCount)
-  }, [formData, settings, fontsReady, bgImage, slideIndex, slideCount])
+    renderCanvas(ctx, formData, SCALE)
+  }, [formData, fontsReady])
 
   return (
     <div>
       <p className="text-xs text-slate-500 mb-2 tracking-wide">
-        Vorschau &middot; {W} &times; {H} px
-        {slideCount > 1 && <> &middot; Slide {slideIndex + 1} von {slideCount}</>}
+        Vorschau &middot; 1080 &times; 1920 px
       </p>
       <canvas
         ref={canvasRef}
