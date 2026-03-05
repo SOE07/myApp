@@ -34,6 +34,7 @@ const DEFAULT_SETTINGS = {
   bulletSpacing: 100,
   showBorder: true,
   borderColor: '#7B2FF7',
+  borderWidth: 24,
   borderLeft: true,
   borderTop: true,
   borderRight: false,
@@ -123,7 +124,7 @@ function drawBackground(ctx, w, h, bgImage) {
 function drawBorders(ctx, w, h, settings) {
   if (!settings.showBorder) return
 
-  const bw = CONFIG.borderWidth
+  const bw = settings.borderWidth ?? CONFIG.borderWidth
   const base = settings.borderColor
 
   const lighten = (hex, amt) => {

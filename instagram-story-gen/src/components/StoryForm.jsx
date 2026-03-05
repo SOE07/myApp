@@ -383,6 +383,13 @@ export default function StoryForm({
                   value={settings.borderColor}
                   onChange={(v) => setSetting('borderColor', v)}
                 />
+                <Slider
+                  label="Breite"
+                  value={settings.borderWidth}
+                  min={4}
+                  max={60}
+                  onChange={(v) => setSetting('borderWidth', v)}
+                />
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-slate-400 w-28 shrink-0">Position</span>
                   <div className="flex gap-1.5">
