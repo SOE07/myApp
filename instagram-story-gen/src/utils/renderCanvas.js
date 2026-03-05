@@ -1,6 +1,6 @@
 /**
  * Canvas rendering engine for Instagram Story Generator
- * Output: 1080 × 1920 px (native), scalable via `scale` parameter
+ * Supports: Story (1080×1920, 9:16) and Post (1080×1350, 4:5)
  */
 
 // ─────────────────────────────────────────────────────────────
@@ -16,9 +16,27 @@ const CONFIG = {
   borderWidth: 24,
 }
 
-// Native canvas dimensions (before scaling)
-const W = 1080
-const H = 1920
+// Format presets
+export const FORMATS = {
+  story: { label: 'Story (9:16)', w: 1080, h: 1920 },
+  post:  { label: 'Post (4:5)',   w: 1080, h: 1350 },
+}
+
+// Default settings
+const DEFAULT_SETTINGS = {
+  titleFontSize: 76,
+  subFontSize: 38,
+  bulletFontSize: 36,
+  ctaFontSize: 32,
+  tagFontSize: 24,
+  titleColor: '#FFFFFF',
+  bulletColor: '#D4D4DD',
+  bulletSpacing: 100,
+  showBorder: true,
+  borderColor: '#7B2FF7',
+  showPageNumber: false,
+  format: 'story',
+}
 
 // ─────────────────────────────────────────────────────────────
 // Font loading via FontFace API (Google Fonts CDN)
@@ -86,51 +104,67 @@ export function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines = Infin
 }
 
 // ─────────────────────────────────────────────────────────────
-// Internal draw helpers
+// Internal draw helpers (all receive w, h as parameters)
 // ─────────────────────────────────────────────────────────────
 
-function drawBackground(ctx) {
+function drawBackground(ctx, w, h, bgImage) {
   ctx.fillStyle = CONFIG.bgDark
-  ctx.fillRect(0, 0, W, H)
+  ctx.fillRect(0, 0, w, h)
+
+  if (bgImage) {
+    ctx.drawImage(bgImage, 0, 0, w, h)
+  }
 }
 
-function drawBorders(ctx) {
+function drawBorders(ctx, w, h, settings) {
+  if (!settings.showBorder) return
+
   const bw = CONFIG.borderWidth
+  const base = settings.borderColor
 
-  // Create a purple gradient for the borders
-  const grad = ctx.createLinearGradient(0, 0, 0, H)
-  grad.addColorStop(0, '#9B4DFF')
-  grad.addColorStop(0.5, '#7B2FF7')
-  grad.addColorStop(1, '#5B1FD7')
+  const lighten = (hex, amt) => {
+    let r = parseInt(hex.slice(1, 3), 16)
+    let g = parseInt(hex.slice(3, 5), 16)
+    let b = parseInt(hex.slice(5, 7), 16)
+    r = Math.min(255, r + amt)
+    g = Math.min(255, g + amt)
+    b = Math.min(255, b + amt)
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+  }
 
-  // Left border
+  const light = lighten(base, 32)
+  const dark = lighten(base, -32)
+
+  const grad = ctx.createLinearGradient(0, 0, 0, h)
+  grad.addColorStop(0, light)
+  grad.addColorStop(0.5, base)
+  grad.addColorStop(1, dark)
+
   ctx.fillStyle = grad
-  ctx.fillRect(0, 0, bw, H)
+  ctx.fillRect(0, 0, bw, h)
 
-  // Top border
-  const topGrad = ctx.createLinearGradient(0, 0, W, 0)
-  topGrad.addColorStop(0, '#9B4DFF')
-  topGrad.addColorStop(0.5, '#7B2FF7')
-  topGrad.addColorStop(1, '#5B1FD7')
+  const topGrad = ctx.createLinearGradient(0, 0, w, 0)
+  topGrad.addColorStop(0, light)
+  topGrad.addColorStop(0.5, base)
+  topGrad.addColorStop(1, dark)
   ctx.fillStyle = topGrad
-  ctx.fillRect(0, 0, W, bw)
+  ctx.fillRect(0, 0, w, bw)
 }
 
-function drawWireframeMesh(ctx) {
+function drawWireframeMesh(ctx, w, h) {
   ctx.save()
 
-  const meshTop = 1300
-  const meshBottom = H - 40
+  const meshTop = h * 0.677    // ~1300 for 1920, ~913 for 1350
+  const meshBottom = h - 40
   const cols = 20
   const rows = 12
-  const vanishX = W / 2
+  const vanishX = w / 2
   const vanishY = meshTop - 100
 
   ctx.strokeStyle = CONFIG.tealColor
   ctx.globalAlpha = 0.25
   ctx.lineWidth = 1.5
 
-  // Generate grid points with perspective and wave
   const points = []
   for (let r = 0; r <= rows; r++) {
     const row = []
@@ -140,16 +174,13 @@ function drawWireframeMesh(ctx) {
     for (let c = 0; c <= cols; c++) {
       const s = c / cols
       const spread = 0.15 + 0.85 * Math.pow(t, 0.6)
-      const x = vanishX + (s - 0.5) * W * 1.4 * spread
-
-      // Add subtle wave displacement
+      const x = vanishX + (s - 0.5) * w * 1.4 * spread
       const wave = Math.sin(s * Math.PI * 3 + t * 2) * 30 * t
       row.push({ x, y: y + wave })
     }
     points.push(row)
   }
 
-  // Draw horizontal lines
   for (let r = 0; r < points.length; r++) {
     ctx.beginPath()
     ctx.moveTo(points[r][0].x, points[r][0].y)
@@ -159,7 +190,6 @@ function drawWireframeMesh(ctx) {
     ctx.stroke()
   }
 
-  // Draw vertical lines
   for (let c = 0; c < points[0].length; c++) {
     ctx.beginPath()
     ctx.moveTo(points[0][c].x, points[0][c].y)
@@ -172,56 +202,97 @@ function drawWireframeMesh(ctx) {
   ctx.restore()
 }
 
+// Tag / Thema ──────────────────────────────────────────────────
+function drawTag(ctx, tag, settings) {
+  if (!tag) return
+  const fontSize = settings.tagFontSize
+  const LEFT = 80
+  const TOP = 80
+
+  ctx.save()
+
+  ctx.font = `700 ${fontSize}px Outfit`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'top'
+  const text = tag.toUpperCase()
+  const metrics = ctx.measureText(text)
+  const pillW = metrics.width + 32
+  const pillH = fontSize + 20
+
+  ctx.fillStyle = CONFIG.accentColor
+  ctx.globalAlpha = 0.9
+  const radius = pillH / 2
+  ctx.beginPath()
+  ctx.moveTo(LEFT + radius, TOP)
+  ctx.lineTo(LEFT + pillW - radius, TOP)
+  ctx.arcTo(LEFT + pillW, TOP, LEFT + pillW, TOP + radius, radius)
+  ctx.arcTo(LEFT + pillW, TOP + pillH, LEFT + pillW - radius, TOP + pillH, radius)
+  ctx.lineTo(LEFT + radius, TOP + pillH)
+  ctx.arcTo(LEFT, TOP + pillH, LEFT, TOP + radius, radius)
+  ctx.arcTo(LEFT, TOP, LEFT + radius, TOP, radius)
+  ctx.closePath()
+  ctx.fill()
+
+  ctx.globalAlpha = 1
+  ctx.fillStyle = '#FFFFFF'
+  ctx.fillText(text, LEFT + 16, TOP + 10)
+
+  ctx.restore()
+}
+
 // Title ────────────────────────────────────────────────────────
-function drawTitle(ctx, title) {
-  const LINE_HEIGHT = 95
+function drawTitle(ctx, w, title, settings) {
+  const fontSize = settings.titleFontSize
+  const LINE_HEIGHT = Math.round(fontSize * 1.25)
   const LEFT = 80
   const TOP = 400
   ctx.save()
-  ctx.fillStyle = '#FFFFFF'
-  ctx.font = '800 76px Outfit'
+  ctx.fillStyle = settings.titleColor
+  ctx.font = `800 ${fontSize}px Outfit`
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
-  const lastLineY = wrapText(ctx, title, LEFT, TOP, W - 160, LINE_HEIGHT, 3)
+  const lastLineY = wrapText(ctx, title, LEFT, TOP, w - 160, LINE_HEIGHT, 3)
   ctx.restore()
-  return lastLineY
+  return lastLineY + LINE_HEIGHT
 }
 
 // Subheadline ──────────────────────────────────────────────────
-function drawSubheadline(ctx, text, startY) {
-  const LINE_HEIGHT = 52
+function drawSubheadline(ctx, w, text, startY, settings) {
+  const fontSize = settings.subFontSize
+  const LINE_HEIGHT = Math.round(fontSize * 1.37)
   const LEFT = 80
   ctx.save()
   ctx.fillStyle = '#C0C0CC'
-  ctx.font = '400 38px Inter'
+  ctx.font = `400 ${fontSize}px Inter`
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
-  const lastLineY = wrapText(ctx, text, LEFT, startY, W - 160, LINE_HEIGHT, 2)
+  const lastLineY = wrapText(ctx, text, LEFT, startY, w - 160, LINE_HEIGHT, 2)
   ctx.restore()
-  return lastLineY
+  return lastLineY + LINE_HEIGHT
 }
 
 // Bullet points ────────────────────────────────────────────────
-function drawBullets(ctx, bullets, startY) {
-  if (!bullets || bullets.length === 0) return
-  const SPACING = 75
+function drawBullets(ctx, bullets, startY, settings) {
+  if (!bullets || bullets.length === 0) return startY
+  const SPACING = settings.bulletSpacing
+  const fontSize = settings.bulletFontSize
   const LEFT = 80
   let y = startY
 
   bullets.forEach((text) => {
-    // Teal chevron "›"
+    if (!text) return
+
     ctx.save()
     ctx.fillStyle = CONFIG.tealColor
-    ctx.font = '600 34px Inter'
+    ctx.font = `600 ${fontSize}px Inter`
     ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
     ctx.fillText('\u203A', LEFT, y - 2)
     ctx.restore()
 
-    // Bullet text
     ctx.save()
-    ctx.fillStyle = '#D4D4DD'
-    ctx.font = '400 36px Inter'
+    ctx.fillStyle = settings.bulletColor
+    ctx.font = `400 ${fontSize}px Inter`
     ctx.textAlign = 'left'
     ctx.textBaseline = 'top'
     ctx.fillText(text, LEFT + 40, y)
@@ -229,68 +300,101 @@ function drawBullets(ctx, bullets, startY) {
 
     y += SPACING
   })
+
+  return y
 }
 
-// Double chevron icon (bottom-right) ──────────────────────────
-function drawChevronIcon(ctx) {
-  const x = W - 140
-  const y = H - 200
+// CTA / Footer ─────────────────────────────────────────────────
+function drawCTA(ctx, w, h, cta, settings) {
+  if (!cta) return
+  const fontSize = settings.ctaFontSize
 
   ctx.save()
+  ctx.fillStyle = CONFIG.tealColor
+  ctx.font = `600 ${fontSize}px Inter`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(cta, w / 2, h - 110)
+  ctx.restore()
+}
+
+// Page indicator (e.g. "1 von 3") ─────────────────────────────
+function drawPageNumber(ctx, w, h, slideIndex, slideCount, settings) {
+  if (!settings.showPageNumber || slideCount <= 1) return
+
+  const text = `${slideIndex + 1} von ${slideCount}`
+  const fontSize = 28
+
+  ctx.save()
+  ctx.font = `600 ${fontSize}px Inter`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
+  ctx.fillText(text, w / 2, h - 55)
+  ctx.restore()
+}
+
+// Footer separator line ───────────────────────────────────────
+function drawFooterSeparator(ctx, w, h) {
+  ctx.save()
   ctx.strokeStyle = CONFIG.tealColor
-  ctx.lineWidth = 5
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
-  ctx.globalAlpha = 0.8
-
-  // First chevron
+  ctx.globalAlpha = 0.15
+  ctx.lineWidth = 1
   ctx.beginPath()
-  ctx.moveTo(x, y)
-  ctx.lineTo(x + 25, y + 30)
-  ctx.lineTo(x, y + 60)
+  ctx.moveTo(80, h - 160)
+  ctx.lineTo(w - 80, h - 160)
   ctx.stroke()
-
-  // Second chevron
-  ctx.beginPath()
-  ctx.moveTo(x + 30, y)
-  ctx.lineTo(x + 55, y + 30)
-  ctx.lineTo(x + 30, y + 60)
-  ctx.stroke()
-
   ctx.restore()
 }
 
 // ─────────────────────────────────────────────────────────────
 // Main render function
 // ─────────────────────────────────────────────────────────────
-function renderCanvas(ctx, data, scale = 1) {
+function renderCanvas(ctx, data, scale = 1, settings = {}, bgImage = null, slideIndex = 0, slideCount = 1) {
+  const s = { ...DEFAULT_SETTINGS, ...settings }
+  const fmt = FORMATS[s.format] || FORMATS.story
+  const w = fmt.w
+  const h = fmt.h
+
   ctx.save()
   ctx.scale(scale, scale)
 
   // Layer 0: background
-  drawBackground(ctx)
+  drawBackground(ctx, w, h, bgImage)
 
-  // Layer 1: 3D wireframe mesh at bottom
-  drawWireframeMesh(ctx)
+  // Layer 1: 3D wireframe mesh at bottom (skip if custom bg)
+  if (!bgImage) {
+    drawWireframeMesh(ctx, w, h)
+  }
 
-  // Layer 2: purple borders (left + top)
-  drawBorders(ctx)
+  // Layer 2: borders
+  drawBorders(ctx, w, h, s)
 
-  // Layer 3: title
-  const titleLastY = drawTitle(ctx, data.title)
+  // Layer 3: tag / Thema
+  drawTag(ctx, data.tag, s)
 
-  // Layer 4: subheadline – 40px below title
-  const subStartY = titleLastY + 76 + 40
-  const subLastY = drawSubheadline(ctx, data.subheadline, subStartY)
+  // Layer 4: title
+  const titleEndY = drawTitle(ctx, w, data.title, s)
 
-  // Layer 5: bullet points – 60px below subheadline
-  const bulletStartY = subLastY + 52 + 60
-  drawBullets(ctx, data.bullets, bulletStartY)
+  // Layer 5: subheadline
+  const subStartY = titleEndY + 40
+  const subEndY = drawSubheadline(ctx, w, data.subheadline, subStartY, s)
 
-  // Layer 6: double chevron icon bottom-right
-  drawChevronIcon(ctx)
+  // Layer 6: bullet points
+  const bulletStartY = subEndY + 50
+  drawBullets(ctx, data.bullets, bulletStartY, s)
+
+  // Layer 7: footer separator
+  drawFooterSeparator(ctx, w, h)
+
+  // Layer 8: CTA
+  drawCTA(ctx, w, h, data.cta, s)
+
+  // Layer 9: page indicator
+  drawPageNumber(ctx, w, h, slideIndex, slideCount, s)
 
   ctx.restore()
 }
 
+export { DEFAULT_SETTINGS }
 export default renderCanvas
