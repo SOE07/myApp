@@ -62,6 +62,12 @@ function ColorPicker({ label, value, onChange }) {
   )
 }
 
+const BG_PRESETS = [
+  { id: 'candlestick', file: 'bg-candlestick.png', label: 'Candlestick' },
+  { id: 'linechart',   file: 'bg-linechart.png',   label: 'Depot' },
+  { id: 'ticker',      file: 'bg-ticker.png',       label: 'Ticker' },
+]
+
 const INPUT_CLS =
   'w-full bg-slate-900 text-white text-sm rounded-lg border border-slate-600 px-3 py-2.5 outline-none placeholder:text-slate-500 focus:border-purple-500 transition-colors'
 
@@ -73,6 +79,7 @@ export default function StoryForm({
   bgImage,
   onBgUpload,
   onBgRemove,
+  onBgPreset,
   onExcelImport,
   onExport,
   onReset,
@@ -149,9 +156,38 @@ export default function StoryForm({
             </button>
           </div>
 
-          {/* ── Template Upload ── */}
+          {/* ── Hintergrund ── */}
           <div className="mb-5 p-4 rounded-lg border border-dashed border-slate-600">
-            <p className="text-sm font-medium text-slate-300 mb-2">Hintergrund-Template</p>
+            <p className="text-sm font-medium text-slate-300 mb-3">Hintergrund</p>
+
+            {/* Preset templates */}
+            <div className="grid grid-cols-4 gap-2 mb-3">
+              <button
+                type="button"
+                className={`relative rounded-lg overflow-hidden border-2 transition-colors aspect-[9/16] ${!bgImage ? 'border-purple-500' : 'border-slate-600 hover:border-slate-500'}`}
+                onClick={onBgRemove}
+              >
+                <div className="absolute inset-0 bg-[#08080F] flex items-center justify-center">
+                  <span className="text-[10px] text-slate-500">Keiner</span>
+                </div>
+              </button>
+              {BG_PRESETS.map((tpl) => {
+                const src = `${import.meta.env.BASE_URL}${tpl.file}`
+                return (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    className={`relative rounded-lg overflow-hidden border-2 transition-colors aspect-[9/16] ${bgImage === src ? 'border-purple-500' : 'border-slate-600 hover:border-slate-500'}`}
+                    onClick={() => onBgPreset(src)}
+                  >
+                    <img src={src} alt={tpl.label} className="absolute inset-0 w-full h-full object-cover" />
+                    <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[9px] text-slate-300 text-center py-0.5">{tpl.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Custom upload */}
             <input
               ref={fileInputRef}
               type="file"
@@ -159,29 +195,13 @@ export default function StoryForm({
               className="hidden"
               onChange={handleFileChange}
             />
-            {bgImage ? (
-              <div className="flex items-center gap-3">
-                <img src={bgImage} alt="Template" className="w-16 h-28 object-cover rounded" />
-                <div>
-                  <p className="text-xs text-slate-400">Template aktiv</p>
-                  <button
-                    type="button"
-                    className="text-xs text-red-400 hover:text-red-300 mt-1 transition-colors"
-                    onClick={onBgRemove}
-                  >
-                    Entfernen
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="text-sm bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                Bild hochladen
-              </button>
-            )}
+            <button
+              type="button"
+              className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Eigenes Bild hochladen
+            </button>
           </div>
 
           {/* ── Thema ── */}

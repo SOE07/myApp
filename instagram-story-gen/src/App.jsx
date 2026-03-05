@@ -150,6 +150,13 @@ function App() {
     updateActiveSlide({ bgImage: null })
   }, [updateActiveSlide])
 
+  const handleBgPreset = useCallback(
+    (src) => {
+      updateActiveSlide({ bgImage: src })
+    },
+    [updateActiveSlide],
+  )
+
   // ── Excel import: one slide per row ──
 
   const handleExcelImport = useCallback((rows) => {
@@ -204,6 +211,7 @@ function App() {
             bgImage={activeSlide.bgImage}
             onBgUpload={handleBgUpload}
             onBgRemove={handleBgRemove}
+            onBgPreset={handleBgPreset}
             onExcelImport={handleExcelImport}
             onExport={handleExport}
             onReset={handleReset}
