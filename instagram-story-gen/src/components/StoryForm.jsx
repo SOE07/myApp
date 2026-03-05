@@ -88,6 +88,8 @@ export default function StoryForm({
   onApiKeyChange,
   onGenerate,
   isGenerating,
+  aiProvider,
+  onAiProviderChange,
 }) {
   const fileInputRef = useRef(null)
   const excelInputRef = useRef(null)
@@ -136,17 +138,37 @@ export default function StoryForm({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* ══════ Left column: Inhalte ══════ */}
         <div>
-          {/* ── API Key ── */}
-          <div className="mb-5 p-4 rounded-lg border border-slate-700">
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Anthropic API Key</label>
-            <input
-              type="password"
-              className={INPUT_CLS}
-              placeholder="sk-ant-..."
-              value={apiKey}
-              onChange={(e) => onApiKeyChange(e.target.value)}
-            />
-            <p className="text-xs text-slate-500 mt-1">Wird nur lokal im Browser gespeichert.</p>
+          {/* ── AI Provider & API Key ── */}
+          <div className="mb-5 p-4 rounded-lg border border-slate-700 space-y-3">
+            <p className="text-sm font-medium text-slate-300 mb-1">KI-Provider</p>
+            <div className="flex gap-2">
+              {[
+                { id: 'claude', label: 'Claude' },
+                { id: 'gemini', label: 'Gemini' },
+              ].map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={`flex-1 text-sm py-2 px-3 rounded-lg border transition-colors ${aiProvider === p.id ? 'border-purple-500 bg-purple-500/20 text-white' : 'border-slate-600 text-slate-400 hover:border-slate-500'}`}
+                  onClick={() => onAiProviderChange(p.id)}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1.5">
+                {aiProvider === 'gemini' ? 'Google Gemini API Key' : 'Anthropic API Key'}
+              </label>
+              <input
+                type="password"
+                className={INPUT_CLS}
+                placeholder={aiProvider === 'gemini' ? 'AIza...' : 'sk-ant-...'}
+                value={apiKey}
+                onChange={(e) => onApiKeyChange(e.target.value)}
+              />
+              <p className="text-xs text-slate-500 mt-1">Wird nur lokal im Browser gespeichert.</p>
+            </div>
           </div>
 
           <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wider mb-4">Inhalte</h2>

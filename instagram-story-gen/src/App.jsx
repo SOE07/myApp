@@ -83,6 +83,7 @@ function App() {
   const [activeIndex, setActiveIndex] = useState(0)
   const [settings, setSettings] = useState({ ...DEFAULT_SETTINGS })
   const [apiKey, setApiKey] = useState('')
+  const [aiProvider, setAiProvider] = useState('gemini')
   const [isGenerating, setIsGenerating] = useState(false)
 
   const activeSlide = slides[activeIndex] ?? slides[0]
@@ -181,7 +182,7 @@ function App() {
   const handleGenerate = useCallback(async () => {
     setIsGenerating(true)
     try {
-      const result = await generateSlideContent(activeSlide.tag, apiKey)
+      const result = await generateSlideContent(activeSlide.tag, apiKey, aiProvider)
       updateActiveSlide({
         title: result.titel,
         subheadline: result.subheadline,
@@ -193,7 +194,7 @@ function App() {
     } finally {
       setIsGenerating(false)
     }
-  }, [activeSlide.tag, apiKey, updateActiveSlide])
+  }, [activeSlide.tag, apiKey, aiProvider, updateActiveSlide])
 
   // ── Reset ──
 
@@ -242,6 +243,8 @@ function App() {
             onApiKeyChange={setApiKey}
             onGenerate={handleGenerate}
             isGenerating={isGenerating}
+            aiProvider={aiProvider}
+            onAiProviderChange={setAiProvider}
           />
         </div>
 
