@@ -34,6 +34,10 @@ const DEFAULT_SETTINGS = {
   bulletSpacing: 100,
   showBorder: true,
   borderColor: '#7B2FF7',
+  borderLeft: true,
+  borderTop: true,
+  borderRight: false,
+  borderBottom: false,
   showPageNumber: false,
   format: 'story',
 }
@@ -135,20 +139,34 @@ function drawBorders(ctx, w, h, settings) {
   const light = lighten(base, 32)
   const dark = lighten(base, -32)
 
-  const grad = ctx.createLinearGradient(0, 0, 0, h)
-  grad.addColorStop(0, light)
-  grad.addColorStop(0.5, base)
-  grad.addColorStop(1, dark)
+  // Vertical gradient (for left/right borders)
+  const vGrad = ctx.createLinearGradient(0, 0, 0, h)
+  vGrad.addColorStop(0, light)
+  vGrad.addColorStop(0.5, base)
+  vGrad.addColorStop(1, dark)
 
-  ctx.fillStyle = grad
-  ctx.fillRect(0, 0, bw, h)
+  // Horizontal gradient (for top/bottom borders)
+  const hGrad = ctx.createLinearGradient(0, 0, w, 0)
+  hGrad.addColorStop(0, light)
+  hGrad.addColorStop(0.5, base)
+  hGrad.addColorStop(1, dark)
 
-  const topGrad = ctx.createLinearGradient(0, 0, w, 0)
-  topGrad.addColorStop(0, light)
-  topGrad.addColorStop(0.5, base)
-  topGrad.addColorStop(1, dark)
-  ctx.fillStyle = topGrad
-  ctx.fillRect(0, 0, w, bw)
+  if (settings.borderLeft) {
+    ctx.fillStyle = vGrad
+    ctx.fillRect(0, 0, bw, h)
+  }
+  if (settings.borderRight) {
+    ctx.fillStyle = vGrad
+    ctx.fillRect(w - bw, 0, bw, h)
+  }
+  if (settings.borderTop) {
+    ctx.fillStyle = hGrad
+    ctx.fillRect(0, 0, w, bw)
+  }
+  if (settings.borderBottom) {
+    ctx.fillStyle = hGrad
+    ctx.fillRect(0, h - bw, w, bw)
+  }
 }
 
 function drawWireframeMesh(ctx, w, h) {
