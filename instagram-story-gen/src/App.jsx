@@ -3,6 +3,7 @@ import StoryForm from './components/StoryForm'
 import StoryPreview from './components/StoryPreview'
 import SlideNav from './components/SlideNav'
 import renderCanvas, { loadFonts, DEFAULT_SETTINGS, FORMATS } from './utils/renderCanvas'
+import generateSlideContent from './utils/generateContent'
 
 const INITIAL_DATA = {
   tag: '',
@@ -81,6 +82,8 @@ function App() {
   const [slides, setSlides] = useState([{ ...INITIAL_DATA }])
   const [activeIndex, setActiveIndex] = useState(0)
   const [settings, setSettings] = useState({ ...DEFAULT_SETTINGS })
+  const [apiKey, setApiKey] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
 
   const activeSlide = slides[activeIndex] ?? slides[0]
 
@@ -173,6 +176,25 @@ function App() {
     [slides, settings],
   )
 
+  // ── KI Generate ──
+
+  const handleGenerate = useCallback(async () => {
+    setIsGenerating(true)
+    try {
+      const result = await generateSlideContent(activeSlide.tag, apiKey)
+      updateActiveSlide({
+        title: result.titel,
+        subheadline: result.subheadline,
+        bullets: result.bullets,
+        cta: result.cta,
+      })
+    } catch {
+      alert('Generierung fehlgeschlagen – prüfe dein Thema und API Key')
+    } finally {
+      setIsGenerating(false)
+    }
+  }, [activeSlide.tag, apiKey, updateActiveSlide])
+
   // ── Reset ──
 
   const handleReset = useCallback(() => {
@@ -216,6 +238,10 @@ function App() {
             onExport={handleExport}
             onReset={handleReset}
             slideCount={slides.length}
+            apiKey={apiKey}
+            onApiKeyChange={setApiKey}
+            onGenerate={handleGenerate}
+            isGenerating={isGenerating}
           />
         </div>
 
