@@ -62,6 +62,12 @@ function ColorPicker({ label, value, onChange }) {
   )
 }
 
+const BG_PRESETS = [
+  { id: 'candlestick', file: 'bg-candlestick.png', label: 'Candlestick' },
+  { id: 'linechart',   file: 'bg-linechart.png',   label: 'Depot' },
+  { id: 'ticker',      file: 'bg-ticker.png',       label: 'Ticker' },
+]
+
 const INPUT_CLS =
   'w-full bg-slate-900 text-white text-sm rounded-lg border border-slate-600 px-3 py-2.5 outline-none placeholder:text-slate-500 focus:border-purple-500 transition-colors'
 
@@ -165,21 +171,20 @@ export default function StoryForm({
                   <span className="text-[10px] text-slate-500">Keiner</span>
                 </div>
               </button>
-              {[
-                { src: '/bg-candlestick.png', label: 'Candlestick' },
-                { src: '/bg-linechart.png', label: 'Depot' },
-                { src: '/bg-ticker.png', label: 'Ticker' },
-              ].map((tpl) => (
-                <button
-                  key={tpl.src}
-                  type="button"
-                  className={`relative rounded-lg overflow-hidden border-2 transition-colors aspect-[9/16] ${bgImage === tpl.src ? 'border-purple-500' : 'border-slate-600 hover:border-slate-500'}`}
-                  onClick={() => onBgPreset(tpl.src)}
-                >
-                  <img src={tpl.src} alt={tpl.label} className="absolute inset-0 w-full h-full object-cover" />
-                  <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[9px] text-slate-300 text-center py-0.5">{tpl.label}</span>
-                </button>
-              ))}
+              {BG_PRESETS.map((tpl) => {
+                const src = `${import.meta.env.BASE_URL}${tpl.file}`
+                return (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    className={`relative rounded-lg overflow-hidden border-2 transition-colors aspect-[9/16] ${bgImage === src ? 'border-purple-500' : 'border-slate-600 hover:border-slate-500'}`}
+                    onClick={() => onBgPreset(src)}
+                  >
+                    <img src={src} alt={tpl.label} className="absolute inset-0 w-full h-full object-cover" />
+                    <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[9px] text-slate-300 text-center py-0.5">{tpl.label}</span>
+                  </button>
+                )
+              })}
             </div>
 
             {/* Custom upload */}
